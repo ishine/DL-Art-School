@@ -69,7 +69,7 @@ if __name__ == "__main__":
     print(f"lr_decay_steps={lr_decay_steps}")
 
     with open("DL-Art-school/experiments/train_gpt.yml") as f:
-        config = yaml.load(f)
+        config = yaml.load(f, Loader=yaml.FullLoader)
 
     config["datasets"]["train"]["path"] = args.train_path
     config["datasets"]["train"]["batch_size"] = train_bs
