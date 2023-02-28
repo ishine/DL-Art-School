@@ -18,7 +18,7 @@ experiments/*/training_state/*
 experiments/*/models/*
 
 
-*.yml
+# *.yml
 *.html
 *.jpg
 *.gif
