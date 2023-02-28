@@ -65,9 +65,8 @@ if __name__ == "__main__":
     val_freq = save_checkpoint_freq = print_freq * 3
 
     print("===CALCULATED SETTINGS===")
-    print(f"{train_bs=} {val_bs=}")
-    print(f"{val_freq=} {lr_decay_steps=}")
-    print(f"{print_freq=} {save_checkpoint_freq=}")
+    print(f"train_bs={train_bs}, val_bs={val_bs}")
+    print(f"lr_decay_steps={lr_decay_steps}")
 
     with open("../experiments/train_gpt.yml") as f:
         config = yaml.load(f)
