@@ -87,4 +87,4 @@ if __name__ == "__main__":
     config["upgrades"]["number_of_checkpoints_to_save"] = args.save_total_limit
 
     with open("../experiments/train_gpt.yml", "w") as f:
-        yaml.dump(config, f)
+        yaml.dump(config, f, default_flow_style=None)
