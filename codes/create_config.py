@@ -46,8 +46,8 @@ if __name__ == "__main__":
     DEFAULT_TRAIN_BS = 64
     DEFAULT_VAL_BS = 32
 
-    training_samples = txt_file_lines(args.dataset_training_path)
-    val_samples = txt_file_lines(args.validation_dataset_training_path)
+    training_samples = txt_file_lines(args.train_path)
+    val_samples = txt_file_lines(args.valid_path)
 
     if training_samples < DEFAULT_TRAIN_BS:
         train_bs = training_samples
