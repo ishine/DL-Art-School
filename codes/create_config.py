@@ -68,7 +68,7 @@ if __name__ == "__main__":
     print(f"train_bs={train_bs}, val_bs={val_bs}")
     print(f"lr_decay_steps={lr_decay_steps}")
 
-    with open("../experiments/train_gpt.yml") as f:
+    with open("DL-Art-school/experiments/train_gpt.yml") as f:
         config = yaml.load(f)
 
     config["datasets"]["train"]["path"] = args.train_path
@@ -86,5 +86,5 @@ if __name__ == "__main__":
     config["logger"]["disable_state_saving"] = args.save_training_states
     config["upgrades"]["number_of_checkpoints_to_save"] = args.save_total_limit
 
-    with open("../experiments/train_gpt.yml", "w") as f:
+    with open("DL-Art-school/experiments/train_gpt.yml", "w") as f:
         yaml.dump(config, f)
