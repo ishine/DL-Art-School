@@ -1,6 +1,8 @@
 from pathlib import Path
 import argparse
 import yaml
+from yaml import CLoader as Loader, CDumper as Dumper
+from collections import OrderedDict
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
@@ -22,6 +24,19 @@ parser.add_argument(
 
 args = parser.parse_args()
 
+def OrderedYaml():
+    '''yaml orderedDict support'''
+    _mapping_tag = yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG
+
+    def dict_representer(dumper, data):
+        return dumper.represent_dict(data.items())
+
+    def dict_constructor(loader, node):
+        return OrderedDict(loader.construct_pairs(node))
+
+    Dumper.add_representer(OrderedDict, dict_representer)
+    Loader.add_constructor(_mapping_tag, dict_constructor)
+    return Loader, Dumper
 
 def txt_file_lines(p: str) -> int:
     return len(Path(p).read_text().strip().split("\n"))
@@ -68,8 +83,10 @@ if __name__ == "__main__":
     print(f"train_bs={train_bs}, val_bs={val_bs}")
     print(f"lr_decay_steps={lr_decay_steps}")
 
+    Loader, Dumper = OrderedYaml()
+
     with open("../experiments/train_gpt.yml") as f:
-        config = yaml.load(f, Loader=yaml.FullLoader)
+        config = yaml.load(f, Loader=Loader)
 
     config["datasets"]["train"]["path"] = args.train_path
     config["datasets"]["train"]["batch_size"] = train_bs
@@ -87,4 +104,4 @@ if __name__ == "__main__":
     config["upgrades"]["number_of_checkpoints_to_save"] = args.save_total_limit
 
     with open("../experiments/train_gpt.yml", "w") as f:
-        yaml.dump(config, f, default_flow_style=None)
+        yaml.dump(config, f, Dumper=Dumper)
