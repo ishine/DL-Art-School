@@ -11,7 +11,7 @@ use_tb_logger: true
 
 datasets:
   train:
-    name: MyTrainDataset
+    name: TestDataset
     n_workers: 8 # idk what this does
     batch_size: 128 # This leads to ~16GB of vram usage on my 3090.
     mode: paired_voice_audio
@@ -27,7 +27,7 @@ datasets:
     use_bpe_tokenizer: True
     load_aligned_codes: False
   val:
-    name: MyValDataset
+    name: TestValidation
     n_workers: 1
     batch_size: 64 # this could be higher probably
     mode: paired_voice_audio
