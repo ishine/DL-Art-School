@@ -24,8 +24,9 @@ parser.add_argument(
 
 args = parser.parse_args()
 
+
 def OrderedYaml():
-    '''yaml orderedDict support'''
+    """yaml orderedDict support"""
     _mapping_tag = yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG
 
     def dict_representer(dumper, data):
@@ -37,6 +38,7 @@ def OrderedYaml():
     Dumper.add_representer(OrderedDict, dict_representer)
     Loader.add_constructor(_mapping_tag, dict_constructor)
     return Loader, Dumper
+
 
 def txt_file_lines(p: str) -> int:
     return len(Path(p).read_text().strip().split("\n"))
@@ -100,7 +102,7 @@ if __name__ == "__main__":
     config["name"] = args.run_name
     config["logger"]["print_freq"] = print_freq
     config["logger"]["save_checkpoint_freq"] = save_checkpoint_freq
-    config["logger"]["disable_state_saving"] = args.save_training_states
+    config["logger"]["disable_state_saving"] = not args.save_training_states
     config["upgrades"]["number_of_checkpoints_to_save"] = args.save_total_limit
 
     with open("../experiments/train_gpt.yml", "w") as f:
