@@ -2,6 +2,7 @@ import torch
 from torch import nn
 import torch.nn.functional as F
 from transformers import GPT2Config, GPT2Model
+import maybe_bnb as mbnb
 
 from models.arch_util import AttentionBlock, ResBlock
 from models.audio.music.music_quantizer import MusicQuantizer
@@ -136,8 +137,9 @@ class GptMusicLower(nn.Module):
         self.gpt = GPT2Model(self.config)
         del self.gpt.wte  # Unused, we'll do our own embeddings.
 
-        self.embeddings = nn.ModuleList([nn.Embedding(num_target_vectors, dim // num_vaes) for _ in range(num_vaes)])
-        self.heads = nn.ModuleList([nn.Linear(dim, num_target_vectors) for _ in range(num_vaes)])
+        # nn.Embedding
+        self.embeddings = nn.ModuleList([mbnb.nn.Embedding(num_target_vectors, dim // num_vaes) for _ in range(num_vaes)])
+        self.heads = nn.ModuleList([mbnb.nn.Linear(dim, num_target_vectors) for _ in range(num_vaes)])
 
     def forward(self, mel, conditioning, return_latent=False):
         unused_params = []
@@ -238,8 +240,9 @@ class GptMusicUpper(nn.Module):
         self.gpt = GPT2Model(self.config)
         del self.gpt.wte  # Unused, we'll do our own embeddings.
 
-        self.embeddings = nn.ModuleList([nn.Embedding(num_upper_vectors, dim // num_upper_groups) for _ in range(num_upper_groups)])
-        self.heads = nn.ModuleList([nn.Linear(dim, num_upper_vectors) for _ in range(num_upper_groups)])
+        # nn.Embedding
+        self.embeddings = nn.ModuleList([mbnb.nn.Embedding(num_upper_vectors, dim // num_upper_groups) for _ in range(num_upper_groups)])
+        self.heads = nn.ModuleList([mbnb.nn.Linear(dim, num_upper_vectors) for _ in range(num_upper_groups)])
 
 
     def forward(self, mel, conditioning, return_latent=False):

@@ -9,6 +9,7 @@ from models.arch_util import AttentionBlock
 from models.lucidrains.x_transformers import ContinuousTransformerWrapper, Encoder
 from trainer.networks import register_model
 from utils.util import opt_get, checkpoint
+import maybe_bnb as mbnb
 
 
 def exists(val):
@@ -178,7 +179,8 @@ class CollapsingTransformer(nn.Module):
 class ConvFormatEmbedding(nn.Module):
     def __init__(self, *args, **kwargs):
         super().__init__()
-        self.emb = nn.Embedding(*args, **kwargs)
+        # nn.Embedding
+        self.emb = mbnb.nn.Embedding(*args, **kwargs)
 
     def forward(self, x):
         y = self.emb(x)
@@ -203,8 +205,8 @@ class ContrastiveAudio(nn.Module):
         self.emb = nn.Sequential(nn.Conv1d(mel_channels, model_dim // 2, kernel_size=5, stride=2, padding=2),
                                  nn.Conv1d(model_dim//2, model_dim, kernel_size=3, stride=2, padding=1))
         self.transformer = CollapsingTransformer(model_dim, model_dim, transformer_heads, dropout, encoder_depth, mask_percent)
-        self.to_latent = nn.Linear(latent_dim, latent_dim, bias=False)
-        self.to_latent2 = nn.Linear(latent_dim, latent_dim, bias=False)
+        self.to_latent = mbnb.nn.Linear(latent_dim, latent_dim, bias=False)
+        self.to_latent2 = mbnb.nn.Linear(latent_dim, latent_dim, bias=False)
 
         self.to_latent2.weight.data = self.to_latent.weight.data
         self.to_latent2.weight.DO_NOT_TRAIN = True

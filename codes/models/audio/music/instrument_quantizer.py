@@ -3,6 +3,7 @@ import functools
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import maybe_bnb as mbnb
 
 from models.diffusion.nn import timestep_embedding
 from models.lucidrains.vq import VectorQuantize
@@ -21,8 +22,8 @@ class SelfClassifyingHead(nn.Module):
                                                 use_rmsnorm=True, ff_glu=True, do_checkpointing=False)
         self.quantizer = VectorQuantize(out_dim, classes, use_cosine_sim=False, threshold_ema_dead_code=2,
                                         sample_codebook_temp=init_temperature)
-        self.to_output = nn.Linear(dim, out_dim)
-        self.to_decoder = nn.Linear(out_dim, dim)
+        self.to_output = mbnb.nn.Linear(dim, out_dim)
+        self.to_decoder = mbnb.nn.Linear(out_dim, dim)
 
     def do_ar_step(self, x, used_codes):
         h = self.dec(x)
@@ -90,7 +91,7 @@ class InstrumentQuantizer(nn.Module):
         """
         super().__init__()
         self.op_dim = op_dim
-        self.proj = nn.Linear(op_dim, dim)
+        self.proj = mbnb.nn.Linear(op_dim, dim)
         self.encoder = nn.ModuleList([VectorResBlock(dim, dropout) for _ in range(enc_depth)])
         self.heads = SelfClassifyingHead(dim, num_classes, op_dim, head_depth, class_seq_len, dropout, max_temp)
         self.min_gumbel_temperature = min_temp

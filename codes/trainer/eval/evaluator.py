@@ -35,6 +35,7 @@ def find_registered_evaluators(base_path="trainer/eval"):
                 results.update(find_registered_evaluators(f'{base_path}/{mod.name}'))
         else:
             mod_name = f'{base_path}/{mod.name}'.replace('/', '.')
+            if 'eval_wer' in mod.name: continue # TODO: this causes an import error for PyCtcDecode. get rid of this if there's a need to use that evaluator.
             importlib.import_module(mod_name)
             classes = inspect.getmembers(sys.modules[mod_name], inspect.isclass)
             for name, obj in classes:

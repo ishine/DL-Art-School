@@ -4,6 +4,7 @@ import torch.nn.functional as F
 from einops import rearrange, repeat
 
 from models.arch_util import l2norm, sample_vectors, default, ema_inplace
+import maybe_bnb as mbnb
 
 
 def kmeans(samples, num_clusters, num_iters = 10, use_cosine_sim = False):
@@ -184,8 +185,8 @@ class VectorQuantize(nn.Module):
 
         codebook_dim = default(codebook_dim, dim)
         requires_projection = codebook_dim != dim
-        self.project_in = nn.Linear(dim, codebook_dim) if requires_projection else nn.Identity()
-        self.project_out = nn.Linear(codebook_dim, dim) if requires_projection else nn.Identity()
+        self.project_in = mbnb.nn.Linear(dim, codebook_dim) if requires_projection else nn.Identity()
+        self.project_out = mbnb.nn.Linear(codebook_dim, dim) if requires_projection else nn.Identity()
 
         self.eps = eps
 

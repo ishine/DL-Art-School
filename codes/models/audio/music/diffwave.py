@@ -17,6 +17,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import maybe_bnb as mbnb
 
 from math import sqrt
 
@@ -24,7 +25,7 @@ from torch.utils.checkpoint import checkpoint
 
 from trainer.networks import register_model
 
-Linear = nn.Linear
+Linear = mbnb.nn.Linear
 ConvTranspose2d = nn.ConvTranspose2d
 
 

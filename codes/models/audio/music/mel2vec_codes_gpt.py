@@ -1,6 +1,7 @@
 import torch
 from torch import nn
 import torch.nn.functional as F
+import maybe_bnb as mbnb
 from transformers import GPT2Config, GPT2Model
 
 from trainer.networks import register_model
@@ -17,8 +18,9 @@ class Mel2VecCodesGpt(nn.Module):
                                  n_inner=dim*2)
         self.gpt = GPT2Model(self.config)
         del self.gpt.wte  # Unused, we'll do our own embeddings.
-        self.embeddings = nn.ModuleList([nn.Embedding(num_vectors, dim//num_groups) for _ in range(num_groups)])
-        self.heads = nn.ModuleList([nn.Linear(dim, num_vectors) for _ in range(num_groups)])
+        # nn.Embedding
+        self.embeddings = nn.ModuleList([mbnb.nn.Embedding(num_vectors, dim//num_groups) for _ in range(num_groups)])
+        self.heads = nn.ModuleList([mbnb.nn.Linear(dim, num_vectors) for _ in range(num_groups)])
 
     def forward(self, codes):
         assert codes.shape[-1] == self.num_groups

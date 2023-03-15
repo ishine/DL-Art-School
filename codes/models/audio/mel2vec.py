@@ -15,13 +15,14 @@ from transformers.deepspeed import is_deepspeed_zero3_enabled
 from models.arch_util import ResBlock
 from trainer.networks import register_model
 from utils.util import checkpoint
+import maybe_bnb as mbnb
 
 
 class Mel2Vec2FeatureProjection(nn.Module):
     def __init__(self, inner_dim, dropout):
         super().__init__()
         self.layer_norm = nn.LayerNorm(inner_dim, eps=1e-5)
-        self.projection = nn.Linear(inner_dim, inner_dim)
+        self.projection = mbnb.nn.Linear(inner_dim, inner_dim)
         self.dropout = nn.Dropout(dropout)
 
     def forward(self, hidden_states):
@@ -58,10 +59,10 @@ class Wav2Vec2Attention(nn.Module):
         self.scaling = self.head_dim**-0.5
         self.is_decoder = is_decoder
 
-        self.k_proj = nn.Linear(embed_dim, embed_dim, bias=bias)
-        self.v_proj = nn.Linear(embed_dim, embed_dim, bias=bias)
-        self.q_proj = nn.Linear(embed_dim, embed_dim, bias=bias)
-        self.out_proj = nn.Linear(embed_dim, embed_dim, bias=bias)
+        self.k_proj = mbnb.nn.Linear(embed_dim, embed_dim, bias=bias)
+        self.v_proj = mbnb.nn.Linear(embed_dim, embed_dim, bias=bias)
+        self.q_proj = mbnb.nn.Linear(embed_dim, embed_dim, bias=bias)
+        self.out_proj = mbnb.nn.Linear(embed_dim, embed_dim, bias=bias)
 
     def _shape(self, tensor: torch.Tensor, seq_len: int, bsz: int):
         return tensor.view(bsz, seq_len, self.num_heads, self.head_dim).transpose(1, 2).contiguous()
@@ -182,10 +183,10 @@ class Wav2Vec2FeedForward(nn.Module):
         super().__init__()
         self.intermediate_dropout = nn.Dropout(dropout)
 
-        self.intermediate_dense = nn.Linear(hidden_size, intermediate_size)
+        self.intermediate_dense = mbnb.nn.Linear(hidden_size, intermediate_size)
         self.intermediate_act_fn = F.gelu
 
-        self.output_dense = nn.Linear(intermediate_size, hidden_size)
+        self.output_dense = mbnb.nn.Linear(intermediate_size, hidden_size)
         self.output_dropout = nn.Dropout(dropout)
 
     def forward(self, hidden_states):
@@ -429,7 +430,7 @@ class Mel2Vec(nn.Module):
             k = math.sqrt(1 / module.projection.in_features)
             nn.init.uniform_(module.projection.weight, a=-k, b=k)
             nn.init.uniform_(module.projection.bias, a=-k, b=k)
-        elif isinstance(module, nn.Linear):
+        elif isinstance(module, mbnb.nn.Linear):
             if self.disable_custom_linear_init:
                 return
             module.weight.data.normal_(mean=0.0, std=self.linear_init_scale)
@@ -510,7 +511,7 @@ class Wav2Vec2GumbelVectorQuantizer(nn.Module):
         self.codevectors = nn.Parameter(
             torch.FloatTensor(1, self.num_groups * self.num_vars, codevector_dim // self.num_groups)
         )
-        self.weight_proj = nn.Linear(proj_dim, self.num_groups * self.num_vars)
+        self.weight_proj = mbnb.nn.Linear(proj_dim, self.num_groups * self.num_vars)
 
         # can be decayed for training
         self.temperature = 2
@@ -606,8 +607,8 @@ class ContrastiveTrainingWrapper(nn.Module):
         self.inp_length_factor = inp_length_multiplier
 
         # make sure that project_hid & project_q are initialized like normal linear layers
-        self.project_hid = nn.Linear(inner_dim, self.quantizer.codevector_dim)
-        self.project_q = nn.Linear(self.quantizer.codevector_dim, self.quantizer.codevector_dim)
+        self.project_hid = mbnb.nn.Linear(inner_dim, self.quantizer.codevector_dim)
+        self.project_q = mbnb.nn.Linear(self.quantizer.codevector_dim, self.quantizer.codevector_dim)
 
         self.reconstruction = do_reconstruction_loss
         if do_reconstruction_loss:

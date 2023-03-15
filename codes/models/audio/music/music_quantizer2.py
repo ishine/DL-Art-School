@@ -3,6 +3,7 @@ import functools
 import torch
 from torch import nn
 import torch.nn.functional as F
+import maybe_bnb as mbnb
 
 from models.arch_util import zero_module
 from models.vqvae.vqvae import Quantize
@@ -87,7 +88,7 @@ class Wav2Vec2GumbelVectorQuantizer(nn.Module):
         self.codevectors = nn.Parameter(
             torch.FloatTensor(1, self.num_groups * self.num_vars, codevector_dim // self.num_groups)
         )
-        self.weight_proj = nn.Linear(proj_dim, self.num_groups * self.num_vars)
+        self.weight_proj = mbnb.nn.Linear(proj_dim, self.num_groups * self.num_vars)
 
         # can be decayed for training
         self.temperature = 2

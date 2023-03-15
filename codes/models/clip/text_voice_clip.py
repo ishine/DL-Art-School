@@ -11,6 +11,7 @@ from models.audio.tts.unet_diffusion_tts7 import CheckpointedXTransformerEncoder
 from models.lucidrains.dalle.transformer import Transformer
 from trainer.networks import register_model
 from utils.util import opt_get
+import maybe_bnb as mbnb
 
 
 def exists(val):
@@ -53,11 +54,13 @@ class VoiceCLIP(nn.Module):
             distributed_collect=False,
     ):
         super().__init__()
-        self.text_emb = nn.Embedding(num_text_tokens, dim_text)
-        self.to_text_latent = nn.Linear(dim_text, dim_latent, bias=False)
+        # nn.Embedding
+        self.text_emb = mbnb.nn.Embedding(num_text_tokens, dim_text)
+        self.to_text_latent = mbnb.nn.Linear(dim_text, dim_latent, bias=False)
 
-        self.speech_emb = nn.Embedding(num_speech_tokens, dim_speech)
-        self.to_speech_latent = nn.Linear(dim_speech, dim_latent, bias=False)
+        # nn.Embedding
+        self.speech_emb = mbnb.nn.Embedding(num_speech_tokens, dim_speech)
+        self.to_speech_latent = mbnb.nn.Linear(dim_speech, dim_latent, bias=False)
 
         if use_xformers:
             self.text_transformer = CheckpointedXTransformerEncoder(
@@ -105,8 +108,10 @@ class VoiceCLIP(nn.Module):
         self.min_mel_size = min_mel_size
         self.distributed_collect = distributed_collect
         if not use_xformers:
-            self.text_pos_emb = nn.Embedding(text_seq_len, dim_text)
-            self.speech_pos_emb = nn.Embedding(num_speech_tokens, dim_speech)
+            # nn.Embedding
+            self.text_pos_emb = mbnb.nn.Embedding(text_seq_len, dim_text)
+            # nn.Embedding
+            self.speech_pos_emb = mbnb.nn.Embedding(num_speech_tokens, dim_speech)
 
     def embed_text(self, text):
         text_mask = torch.ones_like(text.float()).bool()

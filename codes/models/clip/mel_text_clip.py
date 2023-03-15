@@ -7,6 +7,7 @@ from torch import einsum
 from models.lucidrains.dalle.transformer import Transformer
 from trainer.networks import register_model
 from utils.util import opt_get
+import maybe_bnb as mbnb
 
 
 def exists(val):
@@ -45,17 +46,20 @@ class MelTextCLIP(nn.Module):
             mel_compression=256,
     ):
         super().__init__()
-        self.text_emb = nn.Embedding(num_text_tokens, dim_text)
-        self.text_pos_emb = nn.Embedding(text_seq_len, dim_text)
+        # nn.Embedding
+        self.text_emb = mbnb.nn.Embedding(num_text_tokens, dim_text)
+        # nn.Embedding
+        self.text_pos_emb = mbnb.nn.Embedding(text_seq_len, dim_text)
         self.text_transformer = Transformer(causal=False, seq_len=text_seq_len, dim=dim_text, depth=text_enc_depth,
                                             heads=text_heads, rotary_emb=False)
-        self.to_text_latent = nn.Linear(dim_text, dim_latent, bias=False)
+        self.to_text_latent = mbnb.nn.Linear(dim_text, dim_latent, bias=False)
 
         self.speech_enc = nn.Conv1d(80, dim_speech, kernel_size=3, padding=1)
-        self.speech_pos_emb = nn.Embedding(num_speech_tokens, dim_speech)
+        # nn.Embedding
+        self.speech_pos_emb = mbnb.nn.Embedding(num_speech_tokens, dim_speech)
         self.speech_transformer = Transformer(causal=False, seq_len=speech_seq_len, dim=dim_speech,
                                               depth=speech_enc_depth, heads=speech_heads, rotary_emb=False)
-        self.to_speech_latent = nn.Linear(dim_speech, dim_latent, bias=False)
+        self.to_speech_latent = mbnb.nn.Linear(dim_speech, dim_latent, bias=False)
 
         self.temperature = nn.Parameter(torch.tensor(1.))
         self.text_mask_percentage = text_mask_percentage

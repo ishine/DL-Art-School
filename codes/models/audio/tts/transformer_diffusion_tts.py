@@ -7,6 +7,7 @@ from models.diffusion.unet_diffusion import TimestepEmbedSequential, TimestepBlo
 from models.lucidrains.x_transformers import Encoder, Attention, FeedForward, RMSScaleShiftNorm, RotaryEmbedding
 from trainer.networks import register_model
 from utils.util import checkpoint
+import maybe_bnb as mbnb
 
 
 def is_latent(t):
@@ -19,7 +20,8 @@ def is_sequence(t):
 class MultiGroupEmbedding(nn.Module):
     def __init__(self, tokens, groups, dim):
         super().__init__()
-        self.m = nn.ModuleList([nn.Embedding(tokens, dim // groups) for _ in range(groups)])
+        # nn.Embedding
+        self.m = nn.ModuleList([mbnb.nn.Embedding(tokens, dim // groups) for _ in range(groups)])
 
     def forward(self, x):
         h = [embedding(x[:, :, i]) for i, embedding in enumerate(self.m)]
@@ -100,15 +102,17 @@ class TransformerDiffusionTTS(nn.Module):
                     ff_glu=True,
                     rotary_pos_emb=True,
                 )
-        self.clvp_encoder = nn.Linear(clvp_in_dim, model_channels)
-        self.type_embedding = nn.Embedding(types, model_channels)
+        self.clvp_encoder = mbnb.nn.Linear(clvp_in_dim, model_channels)
+        # nn.Embedding
+        self.type_embedding = mbnb.nn.Embedding(types, model_channels)
 
         # Either code_converter or latent_converter is used, depending on what type of conditioning data is fed.
         # This model is meant to be able to be trained on both for efficiency purposes - it is far less computationally
         # complex to generate tokens, while generating latents will normally mean propagating through a deep autoregressive
         # transformer network.
         if in_groups is None:
-            self.embeddings = nn.Embedding(token_count, model_channels)
+            # nn.Embedding
+            self.embeddings = mbnb.nn.Embedding(token_count, model_channels)
         else:
             self.embeddings = MultiGroupEmbedding(token_count, in_groups, model_channels)
         self.latent_conditioner = nn.Sequential(
@@ -140,7 +144,7 @@ class TransformerDiffusionTTS(nn.Module):
         self.mel_head = nn.Conv1d(model_channels, in_channels, kernel_size=3, padding=1)
 
         self.rotary_embeddings = RotaryEmbedding(rotary_emb_dim)
-        self.intg = nn.Linear(model_channels*2, model_channels)
+        self.intg = mbnb.nn.Linear(model_channels*2, model_channels)
         self.layers = TimestepRotaryEmbedSequential(*[AttentionBlock(model_channels, model_channels//64, dropout) for _ in range(num_layers)])
 
         self.out = nn.Sequential(

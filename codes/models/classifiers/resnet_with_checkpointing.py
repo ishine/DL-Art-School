@@ -4,6 +4,7 @@ import torch
 import torch.nn as nn
 from torchvision.models.resnet import BasicBlock, Bottleneck
 import torchvision
+import maybe_bnb as mbnb
 
 
 __all__ = ['ResNet', 'resnet18', 'resnet34', 'resnet50', 'resnet101',
@@ -194,5 +195,5 @@ def wide_resnet101_2(pretrained=False, progress=True, **kwargs):
 def register_resnet50(opt_net, opt):
     model = resnet50(pretrained=opt_net['pretrained'])
     if opt_net['custom_head_logits']:
-        model.fc = nn.Linear(512 * 4, opt_net['custom_head_logits'])
+        model.fc = mbnb.nn.Linear(512 * 4, opt_net['custom_head_logits'])
     return model

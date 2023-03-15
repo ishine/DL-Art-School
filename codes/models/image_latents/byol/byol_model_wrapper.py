@@ -12,6 +12,7 @@ from torch import nn
 from data.images.byol_attachment import RandomApply
 from trainer.networks import register_model, create_model
 from utils.util import checkpoint, opt_get
+import maybe_bnb as mbnb
 
 
 def default(val, def_val):
@@ -78,10 +79,10 @@ class MLP(nn.Module):
     def __init__(self, dim, projection_size, hidden_size=4096):
         super().__init__()
         self.net = nn.Sequential(
-            nn.Linear(dim, hidden_size),
+            mbnb.nn.Linear(dim, hidden_size),
             nn.BatchNorm1d(hidden_size),
             nn.ReLU(inplace=True),
-            nn.Linear(hidden_size, projection_size)
+            mbnb.nn.Linear(hidden_size, projection_size)
         )
 
     def forward(self, x):
@@ -103,10 +104,10 @@ class StructuralMLP(nn.Module):
             nn.BatchNorm2d(c),
             nn.ReLU(inplace=True),
             nn.Flatten(),
-            nn.Linear(flattened_dim, hidden_size),
+            mbnb.nn.Linear(flattened_dim, hidden_size),
             nn.BatchNorm1d(hidden_size),
             nn.ReLU(inplace=True),
-            nn.Linear(hidden_size, projection_size)
+            mbnb.nn.Linear(hidden_size, projection_size)
         )
 
     def forward(self, x):

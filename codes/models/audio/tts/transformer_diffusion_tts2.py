@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import maybe_bnb as mbnb
 
 from models.diffusion.nn import timestep_embedding, normalization, zero_module, conv_nd, linear
 from models.diffusion.unet_diffusion import TimestepEmbedSequential, TimestepBlock
@@ -19,7 +20,8 @@ def is_sequence(t):
 class MultiGroupEmbedding(nn.Module):
     def __init__(self, tokens, groups, dim):
         super().__init__()
-        self.m = nn.ModuleList([nn.Embedding(tokens, dim // groups) for _ in range(groups)])
+        # nn.Embedding
+        self.m = nn.ModuleList([mbnb.nn.Embedding(tokens, dim // groups) for _ in range(groups)])
 
     def forward(self, x):
         h = [embedding(x[:, :, i]) for i, embedding in enumerate(self.m)]
@@ -40,7 +42,7 @@ class DietAttentionBlock(TimestepBlock):
     def __init__(self, in_dim, dim, heads, dropout):
         super().__init__()
         self.rms_scale_norm = RMSScaleShiftNorm(in_dim)
-        self.proj = nn.Linear(in_dim, dim)
+        self.proj = mbnb.nn.Linear(in_dim, dim)
         self.attn = Attention(dim, heads=heads, causal=False, dropout=dropout)
         self.ff = FeedForward(dim, in_dim, mult=1, dropout=dropout, zero_init_output=True)
 
@@ -105,15 +107,17 @@ class TransformerDiffusionTTS(nn.Module):
                     ff_glu=True,
                     rotary_pos_emb=True,
                 )
-        self.clvp_encoder = nn.Linear(clvp_in_dim, prenet_channels)
-        self.type_embedding = nn.Embedding(types, prenet_channels)
+        self.clvp_encoder = mbnb.nn.Linear(clvp_in_dim, prenet_channels)
+        # nn.Embedding
+        self.type_embedding = mbnb.nn.Embedding(types, prenet_channels)
 
         # Either code_converter or latent_converter is used, depending on what type of conditioning data is fed.
         # This model is meant to be able to be trained on both for efficiency purposes - it is far less computationally
         # complex to generate tokens, while generating latents will normally mean propagating through a deep autoregressive
         # transformer network.
         if in_groups is None:
-            self.embeddings = nn.Embedding(token_count, prenet_channels)
+            # nn.Embedding
+            self.embeddings = mbnb.nn.Embedding(token_count, prenet_channels)
         else:
             self.embeddings = MultiGroupEmbedding(token_count, in_groups, prenet_channels)
         self.latent_conditioner = nn.Sequential(
@@ -144,8 +148,8 @@ class TransformerDiffusionTTS(nn.Module):
         self.unconditioned_embedding = nn.Parameter(torch.randn(1,1,prenet_channels))
 
         self.rotary_embeddings = RotaryEmbedding(rotary_emb_dim)
-        self.cond_intg = nn.Linear(prenet_channels*4, model_channels)
-        self.intg = nn.Linear(prenet_channels*2, model_channels)
+        self.cond_intg = mbnb.nn.Linear(prenet_channels*4, model_channels)
+        self.intg = mbnb.nn.Linear(prenet_channels*2, model_channels)
 
         self.layers = TimestepRotaryEmbedSequential(*[DietAttentionBlock(model_channels, block_channels, block_channels // 64, dropout) for _ in range(num_layers)])
 

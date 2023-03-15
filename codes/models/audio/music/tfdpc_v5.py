@@ -1,3 +1,4 @@
+
 import itertools
 import os
 import random
@@ -7,6 +8,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torchaudio
 import torchvision
+import maybe_bnb as mbnb
 
 from models.diffusion.nn import timestep_embedding, normalization, zero_module, conv_nd, linear
 from models.diffusion.unet_diffusion import TimestepBlock
@@ -54,12 +56,12 @@ class ConcatAttentionBlock(TimestepBlock):
         self.prenorm = RMSScaleShiftNorm(trunk_dim, embed_dim=time_embed_dim, bias=False)
         if cond_projection:
             self.tdim = trunk_dim+cond_dim_hidden
-            self.cond_project = nn.Linear(cond_dim_in, cond_dim_hidden)
+            self.cond_project = mbnb.nn.Linear(cond_dim_in, cond_dim_hidden)
         else:
             self.tdim = trunk_dim
         self.block1 = SubBlock(self.tdim, contraction_dim, heads, dropout, use_conv)
         self.block2 = SubBlock(self.tdim+contraction_dim*2, contraction_dim, heads, dropout, use_conv)
-        self.out = nn.Linear(contraction_dim*4, trunk_dim, bias=False)
+        self.out = mbnb.nn.Linear(contraction_dim*4, trunk_dim, bias=False)
         self.out.weight.data.zero_()
 
     def forward(self, x, cond, timestep_emb, rotary_emb):
@@ -87,7 +89,7 @@ class ConditioningEncoder(nn.Module):
         self.init = nn.Conv1d(cond_dim, embedding_dim, kernel_size=1)
         self.time_proj = time_proj
         if time_proj:
-            self.time_proj = nn.Linear(time_embed_dim, embedding_dim)
+            self.time_proj = mbnb.nn.Linear(time_embed_dim, embedding_dim)
         self.attn = Encoder(
                 dim=embedding_dim,
                 depth=attn_blocks,

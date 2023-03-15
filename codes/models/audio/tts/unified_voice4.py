@@ -11,6 +11,7 @@ from models.audio.tts.transformer_builders import build_hf_gpt_transformer
 from models.lucidrains.x_transformers import RotaryEmbedding, apply_rotary_pos_emb
 from trainer.networks import register_model
 from utils.util import opt_get
+import maybe_bnb as mbnb
 
 
 class ResBlock(nn.Module):
@@ -255,15 +256,17 @@ class UnifiedVoice(nn.Module):
         self.model_dim = model_dim
         self.mel_length_compression = mel_length_compression
         self.conditioning_encoder = ConditioningEncoder(80, model_dim, num_attn_heads=heads)
-        self.text_embedding = nn.Embedding(self.number_text_tokens*types+1, model_dim)
-        self.mel_embedding = nn.Embedding(self.number_mel_codes, model_dim)
+        # nn.Embedding
+        self.text_embedding = mbnb.nn.Embedding(self.number_text_tokens*types+1, model_dim)
+        # nn.Embedding
+        self.mel_embedding = mbnb.nn.Embedding(self.number_mel_codes, model_dim)
         self.gpt, self.mel_pos_embedding, self.text_pos_embedding, self.mel_layer_pos_embedding, self.text_layer_pos_embedding = \
             build_hf_gpt_transformer(layers, model_dim, heads, self.max_mel_tokens, self.max_text_tokens, checkpointing)
 
         self.final_norm = nn.LayerNorm(model_dim)
-        self.text_head = nn.Linear(model_dim, self.number_text_tokens*types+1)
-        self.mel_head = nn.Linear(model_dim, self.number_mel_codes)
-        self.alignment_head = nn.Linear(model_dim, 256)
+        self.text_head = mbnb.nn.Linear(model_dim, self.number_text_tokens*types+1)
+        self.mel_head = mbnb.nn.Linear(model_dim, self.number_mel_codes)
+        self.alignment_head = mbnb.nn.Linear(model_dim, 256)
 
         if only_alignment_head:
             for p in self.parameters():
