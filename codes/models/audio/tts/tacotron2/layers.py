@@ -3,12 +3,13 @@ from librosa.filters import mel as librosa_mel_fn
 from models.audio.tts.tacotron2.audio_processing import dynamic_range_compression
 from models.audio.tts.tacotron2.audio_processing import dynamic_range_decompression
 from models.audio.tts.tacotron2.stft import STFT
+import maybe_bnb as mbnb
 
 
 class LinearNorm(torch.nn.Module):
     def __init__(self, in_dim, out_dim, bias=True, w_init_gain='linear'):
         super(LinearNorm, self).__init__()
-        self.linear_layer = torch.nn.Linear(in_dim, out_dim, bias=bias)
+        self.linear_layer = torch.mbnb.nn.Linear(in_dim, out_dim, bias=bias)
 
         torch.nn.init.xavier_uniform_(
             self.linear_layer.weight,

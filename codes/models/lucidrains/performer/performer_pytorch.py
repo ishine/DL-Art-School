@@ -21,6 +21,7 @@ try:
     APEX_AVAILABLE = True
 except:
     APEX_AVAILABLE = False
+import maybe_bnb as mbnb
 
 # helpers
 
@@ -356,10 +357,10 @@ class FeedForward(nn.Module):
         activation = default(activation, nn.GELU)
 
         self.glu = glu
-        self.w1 = nn.Linear(dim, dim * mult * (2 if glu else 1))
+        self.w1 = mbnb.nn.Linear(dim, dim * mult * (2 if glu else 1))
         self.act = activation()
         self.dropout = nn.Dropout(dropout)
-        self.w2 = nn.Linear(dim * mult, dim)
+        self.w2 = mbnb.nn.Linear(dim * mult, dim)
 
     def forward(self, x, **kwargs):
         if not self.glu:
@@ -401,10 +402,10 @@ class Attention(nn.Module):
         self.global_heads = heads - local_heads
         self.local_attn = LocalAttention(window_size = local_window_size, causal = causal, autopad = True, dropout = dropout, look_forward = int(not causal), rel_pos_emb_config = (dim_head, local_heads)) if local_heads > 0 else None
 
-        self.to_q = nn.Linear(dim, inner_dim, bias = qkv_bias)
-        self.to_k = nn.Linear(dim, inner_dim, bias = qkv_bias)
-        self.to_v = nn.Linear(dim, inner_dim, bias = qkv_bias)
-        self.to_out = nn.Linear(inner_dim, dim, bias = attn_out_bias)
+        self.to_q = mbnb.nn.Linear(dim, inner_dim, bias = qkv_bias)
+        self.to_k = mbnb.nn.Linear(dim, inner_dim, bias = qkv_bias)
+        self.to_v = mbnb.nn.Linear(dim, inner_dim, bias = qkv_bias)
+        self.to_out = mbnb.nn.Linear(inner_dim, dim, bias = attn_out_bias)
         self.dropout = nn.Dropout(dropout)
 
     def forward(self, x, pos_emb = None, context = None, mask = None, context_mask = None, **kwargs):
@@ -458,7 +459,8 @@ class CrossAttention(Attention):
 class AbsolutePositionalEmbedding(nn.Module):
     def __init__(self, dim, max_seq_len):
         super().__init__()
-        self.emb = nn.Embedding(max_seq_len, dim)
+        # nn.Embedding
+        self.emb = mbnb.nn.Embedding(max_seq_len, dim)
 
     def forward(self, x):
         t = torch.arange(x.shape[1], device=x.device)
@@ -619,7 +621,8 @@ class PerformerLM(nn.Module):
         local_attn_heads = cast_tuple(local_attn_heads)
 
         self.max_seq_len = max_seq_len
-        self.token_emb = nn.Embedding(num_tokens, dim)
+        # nn.Embedding
+        self.token_emb = mbnb.nn.Embedding(num_tokens, dim)
 
         if rotary_position_emb:
             self.pos_emb = FixedPositionalEmbedding(dim, max_seq_len)
@@ -636,7 +639,7 @@ class PerformerLM(nn.Module):
 
         self.performer = Performer(dim, depth, heads, dim_head, local_attn_heads, local_window_size, causal, ff_mult, nb_features, feature_redraw_interval, reversible, ff_chunks, generalized_attention, kernel_fn, use_scalenorm, use_rezero, ff_glu, ff_dropout, attn_dropout, cross_attend, no_projection, auto_check_redraw, qkv_bias, attn_out_bias, shift_tokens)
         self.norm = nn.LayerNorm(dim)
-        self.to_out = nn.Linear(dim, num_tokens) if not tie_embed else None
+        self.to_out = mbnb.nn.Linear(dim, num_tokens) if not tie_embed else None
 
     def check_redraw_projections(self):
         self.performer.check_redraw_projections()

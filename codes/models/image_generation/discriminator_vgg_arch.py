@@ -5,6 +5,7 @@ import torch.nn.functional as F
 
 from trainer.networks import register_model
 from utils.util import checkpoint, opt_get
+import maybe_bnb as mbnb
 
 
 class Discriminator_VGG_128(nn.Module):
@@ -46,8 +47,8 @@ class Discriminator_VGG_128(nn.Module):
             input_img_factor = input_img_factor // 2
             final_nf = nf * 16
 
-        self.linear1 = nn.Linear(final_nf * 4 * input_img_factor * 4 * input_img_factor, 100)
-        self.linear2 = nn.Linear(100, 1)
+        self.linear1 = mbnb.nn.Linear(final_nf * 4 * input_img_factor * 4 * input_img_factor, 100)
+        self.linear2 = mbnb.nn.Linear(100, 1)
 
         # activation function
         self.lrelu = nn.LeakyReLU(negative_slope=0.2, inplace=True)
@@ -129,8 +130,8 @@ class Discriminator_VGG_128_GN(nn.Module):
         # activation function
         self.lrelu = nn.LeakyReLU(negative_slope=0.2, inplace=True)
 
-        self.linear1 = nn.Linear(int(final_nf * 4 * input_img_factor * 4 * input_img_factor), 100)
-        self.linear2 = nn.Linear(100, 1)
+        self.linear1 = mbnb.nn.Linear(int(final_nf * 4 * input_img_factor * 4 * input_img_factor), 100)
+        self.linear2 = mbnb.nn.Linear(100, 1)
 
     def compute_body(self, x):
         fea = self.lrelu(self.conv0_0(x))
@@ -219,8 +220,8 @@ class DiscriminatorVGG448GN(nn.Module):
         self.lrelu = nn.LeakyReLU(negative_slope=0.2, inplace=True)
 
         final_nf = nf * 8
-        self.linear1 = nn.Linear(int(final_nf * 7 * 7), 100)
-        self.linear2 = nn.Linear(100, 1)
+        self.linear1 = mbnb.nn.Linear(int(final_nf * 7 * 7), 100)
+        self.linear2 = mbnb.nn.Linear(100, 1)
 
         # Assign all new heads to the new param group.2
         for m in [self.convn1_0, self.convn1_1, self.bnn1_1, self.conv0_0_new, self.bn0_0]:

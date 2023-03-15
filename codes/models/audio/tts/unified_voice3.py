@@ -1,6 +1,8 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import maybe_bnb as mbnb
+
 from transformers import GPT2Config, GPT2PreTrainedModel
 from transformers.modeling_outputs import CausalLMOutputWithCrossAttentions
 from transformers.models.gpt2.modeling_gpt2 import GPT2Attention
@@ -271,15 +273,17 @@ class UnifiedVoice(nn.Module):
         self.model_dim = model_dim
         self.mel_length_compression = mel_length_compression
         self.conditioning_encoder = ConditioningEncoder(80, model_dim, num_attn_heads=heads)
-        self.text_embedding = nn.Embedding(self.number_text_tokens*types+1, model_dim)
-        self.mel_embedding = nn.Embedding(self.number_mel_codes, model_dim)
+        # nn.Embedding
+        self.text_embedding = mbnb.nn.Embedding(self.number_text_tokens*types+1, model_dim)
+        # nn.Embedding
+        self.mel_embedding = mbnb.nn.Embedding(self.number_mel_codes, model_dim)
         self.gpt, self.mel_pos_embedding, self.text_pos_embedding, self.mel_layer_pos_embedding, self.text_layer_pos_embedding = \
             build_hf_gpt_transformer(layers, model_dim, heads, self.max_mel_tokens, self.max_text_tokens, checkpointing)
 
         self.final_norm = nn.LayerNorm(model_dim)
-        self.text_head = nn.Linear(model_dim, self.number_text_tokens*types+1)
-        self.mel_head = nn.Linear(model_dim, self.number_mel_codes)
-        self.aligned_head = nn.Linear(model_dim, number_aligned_text_codes)
+        self.text_head = mbnb.nn.Linear(model_dim, self.number_text_tokens*types+1)
+        self.mel_head = mbnb.nn.Linear(model_dim, self.number_mel_codes)
+        self.aligned_head = mbnb.nn.Linear(model_dim, number_aligned_text_codes)
 
         # Initialize the embeddings per the GPT-2 scheme
         embeddings = [self.text_embedding, self.mel_embedding]

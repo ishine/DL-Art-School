@@ -25,6 +25,7 @@ import random
 from time import time
 import torch
 import torch.nn as nn
+import maybe_bnb as mbnb
 from tqdm import tqdm
 
 
@@ -35,7 +36,8 @@ def null_position_embeddings(range, dim):
 class LearnedPositionEmbeddings(nn.Module):
     def __init__(self, seq_len, model_dim, init=.02, relative=False):
         super().__init__()
-        self.emb = nn.Embedding(seq_len, model_dim)
+        # nn.Embedding
+        self.emb = mbnb.nn.Embedding(seq_len, model_dim)
         # Initializing this way is standard for GPT-2
         self.emb.weight.data.normal_(mean=0.0, std=init)
         self.relative = relative

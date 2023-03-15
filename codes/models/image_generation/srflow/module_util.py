@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.init as init
 import torch.nn.functional as F
+import maybe_bnb as mbnb
 
 
 def initialize_weights(net_l, scale=1):
@@ -14,7 +15,7 @@ def initialize_weights(net_l, scale=1):
                 m.weight.data *= scale  # for residual block
                 if m.bias is not None:
                     m.bias.data.zero_()
-            elif isinstance(m, nn.Linear):
+            elif isinstance(m, mbnb.nn.Linear):
                 init.kaiming_normal_(m.weight, a=0, mode='fan_in')
                 m.weight.data *= scale
                 if m.bias is not None:

@@ -10,6 +10,7 @@ from models.arch_util import AttentionBlock
 from models.lucidrains.x_transformers import ContinuousTransformerWrapper, Encoder
 from trainer.networks import register_model
 from utils.util import opt_get, checkpoint
+import maybe_bnb as mbnb
 
 
 def exists(val):
@@ -58,7 +59,8 @@ class CollapsingTransformer(nn.Module):
 class ConvFormatEmbedding(nn.Module):
     def __init__(self, *args, **kwargs):
         super().__init__()
-        self.emb = nn.Embedding(*args, **kwargs)
+        # nn.Embedding
+        self.emb = mbnb.nn.Embedding(*args, **kwargs)
 
     def forward(self, x):
         y = self.emb(x)
@@ -98,9 +100,10 @@ class CLVP(nn.Module):
         self.masked_conditioning_latent = nn.Parameter(torch.randn(1,model_dim*2), requires_grad=True)
         self.mask_conditioning_percentage = mask_conditioning_percentage
 
-        self.text_emb = nn.Embedding(num_text_tokens, model_dim)
+        # nn.Embedding
+        self.text_emb = mbnb.nn.Embedding(num_text_tokens, model_dim)
         self.text_transformer = CollapsingTransformer(model_dim, latent_dim, transformer_heads, dropout, text_enc_depth, text_mask_percentage, use_rms_scaleshift_norm=True)
-        self.to_text_latent = nn.Linear(latent_dim, latent_dim, bias=False)
+        self.to_text_latent = mbnb.nn.Linear(latent_dim, latent_dim, bias=False)
         self.distributed_collect = distributed_collect
 
         if mel_codes is None:
@@ -108,7 +111,7 @@ class CLVP(nn.Module):
         else:
             self.speech_emb = ConvFormatEmbedding(mel_codes, model_dim)
         self.speech_transformer = CollapsingTransformer(model_dim, latent_dim, transformer_heads, dropout, speech_enc_depth, speech_mask_percentage)
-        self.to_speech_latent = nn.Linear(latent_dim, latent_dim, bias=False)
+        self.to_speech_latent = mbnb.nn.Linear(latent_dim, latent_dim, bias=False)
 
     def get_grad_norm_parameter_groups(self):
         return {

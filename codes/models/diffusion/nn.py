@@ -6,6 +6,7 @@ import math
 
 import torch as th
 import torch.nn as nn
+import maybe_bnb as mbnb
 
 
 # PyTorch 1.7 has SiLU, but we support PyTorch 1.5.
@@ -36,7 +37,7 @@ def linear(*args, **kwargs):
     """
     Create a linear module.
     """
-    return nn.Linear(*args, **kwargs)
+    return mbnb.nn.Linear(*args, **kwargs)
 
 
 def avg_pool_nd(dims, *args, **kwargs):

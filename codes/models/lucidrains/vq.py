@@ -8,6 +8,7 @@ from torch.cuda.amp import autocast
 
 from einops import rearrange, repeat
 from contextlib import contextmanager
+import maybe_bnb as mbnb
 
 
 def par(t, nm):
@@ -355,9 +356,9 @@ class VectorQuantize(nn.Module):
 
         codebook_dim = default(codebook_dim, dim)
         requires_projection = codebook_dim != dim
-        self.project_in = nn.Linear(dim, codebook_dim) if requires_projection \
+        self.project_in = mbnb.nn.Linear(dim, codebook_dim) if requires_projection \
                           else nn.Identity()
-        self.project_out = nn.Linear(codebook_dim, dim) if requires_projection \
+        self.project_out = mbnb.nn.Linear(codebook_dim, dim) if requires_projection \
                            else nn.Identity()
 
         self.eps = eps

@@ -4,6 +4,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch import autocast
+import maybe_bnb as mbnb
 
 from models.arch_util import ResBlock
 from models.diffusion.nn import timestep_embedding, normalization, zero_module, conv_nd, linear
@@ -22,7 +23,8 @@ def is_sequence(t):
 class MultiGroupEmbedding(nn.Module):
     def __init__(self, tokens, groups, dim):
         super().__init__()
-        self.m = nn.ModuleList([nn.Embedding(tokens, dim // groups) for _ in range(groups)])
+        # nn.Embedding
+        self.m = nn.ModuleList([mbnb.nn.Embedding(tokens, dim // groups) for _ in range(groups)])
 
     def forward(self, x):
         h = [embedding(x[:, :, i]) for i, embedding in enumerate(self.m)]
@@ -158,7 +160,8 @@ class FlatDiffusion(nn.Module):
         # complex to generate tokens, while generating latents will normally mean propagating through a deep autoregressive
         # transformer network.
         if in_groups is None:
-            self.embeddings = nn.Embedding(token_count, model_channels)
+            # nn.Embedding
+            self.embeddings = mbnb.nn.Embedding(token_count, model_channels)
         else:
             self.embeddings = MultiGroupEmbedding(token_count, in_groups, model_channels)
         self.latent_conditioner = nn.Sequential(

@@ -1,4 +1,4 @@
-experiments/*
+#experiments/*
 results/*
 tb_logger/*
 datasets/*
@@ -8,10 +8,18 @@ codes/wandb/*
 codes/pretrained_models/*
 codes/scripts/audio/pretrained_models/*
 data/*
-.vscode
 
+# IDEs
+.vscode
+.idea/
+
+experiments/disco*
+experiments/*/training_state/*
+experiments/*/models/*
+
+
+# *.yml
 *.html
-*.png
 *.jpg
 *.gif
 *.pth
@@ -130,3 +138,31 @@ venv.bak/
 
 # mypy
 .mypy_cache/
+DLAS_hash.cfg
+experiments/DLAS_last_run.yaml
+*.yaml
+resources/cudnn-windows-x86_64-8.6.0.163_cuda11-archive/bin/cudnn64_8.dll
+resources/cudnn-windows-x86_64-8.6.0.163_cuda11-archive/bin/cudnn_adv_infer64_8.dll
+resources/cudnn-windows-x86_64-8.6.0.163_cuda11-archive/bin/cudnn_adv_train64_8.dll
+resources/cudnn-windows-x86_64-8.6.0.163_cuda11-archive/bin/cudnn_cnn_infer64_8.dll
+resources/cudnn-windows-x86_64-8.6.0.163_cuda11-archive/bin/cudnn_cnn_train64_8.dll
+resources/cudnn-windows-x86_64-8.6.0.163_cuda11-archive/bin/cudnn_ops_infer64_8.dll
+resources/cudnn-windows-x86_64-8.6.0.163_cuda11-archive/bin/cudnn_ops_train64_8.dll
+resources/cudnn-windows-x86_64-8.6.0.163_cuda11-archive/include/cudnn.h
+resources/cudnn-windows-x86_64-8.6.0.163_cuda11-archive/include/cudnn_adv_infer.h
+resources/cudnn-windows-x86_64-8.6.0.163_cuda11-archive/include/cudnn_adv_train.h
+resources/cudnn-windows-x86_64-8.6.0.163_cuda11-archive/include/cudnn_backend.h
+resources/cudnn-windows-x86_64-8.6.0.163_cuda11-archive/include/cudnn_cnn_infer.h
+resources/cudnn-windows-x86_64-8.6.0.163_cuda11-archive/include/cudnn_cnn_train.h
+resources/cudnn-windows-x86_64-8.6.0.163_cuda11-archive/include/cudnn_ops_infer.h
+resources/cudnn-windows-x86_64-8.6.0.163_cuda11-archive/include/cudnn_ops_train.h
+resources/cudnn-windows-x86_64-8.6.0.163_cuda11-archive/include/cudnn_version.h
+resources/cudnn-windows-x86_64-8.6.0.163_cuda11-archive/LICENSE
+*.0
+tortoise-tts-fast/
+
+# personal
+archive
+NOTES_unredacted.md
+pyfastmp3decoder/
+

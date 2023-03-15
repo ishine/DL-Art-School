@@ -9,6 +9,7 @@ from data.audio.unsupervised_audio_dataset import load_audio
 from models.audio.tts.tacotron2.text import sequence_to_text
 from trainer.networks import register_model
 from utils.util import opt_get
+import maybe_bnb as mbnb
 
 
 def only_letters(string):
@@ -51,7 +52,7 @@ class Wav2VecWrapper(nn.Module):
         self.w2v = Wav2Vec2ForCTC.from_pretrained(basis_model)
         # Perform some surgery to get the model we actually want.
         self.w2v.wav2vec2.encoder.gradient_checkpointing = checkpointing_enabled
-        self.w2v.lm_head = nn.Linear(self.w2v.config.hidden_size, vocab_size)
+        self.w2v.lm_head = mbnb.nn.Linear(self.w2v.config.hidden_size, vocab_size)
         self.w2v.config.vocab_size = vocab_size
         self.w2v.config.pad_token_id = 0
         self.w2v.config.ctc_loss_reduction = 'sum'

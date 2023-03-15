@@ -76,6 +76,8 @@ class InfStorageLossAccumulator:
     def as_dict(self):
         result = {}
         for k, buf in self.buffers.items():
+            if isinstance(buf[0],int) and 0 == buf[0]:
+                buf[0] = torch.tensor(0, dtype=torch.float32)
             if '_histogram' in k:
                 result["loss_" + k] = torch.flatten(buf)
             else:

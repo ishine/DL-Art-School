@@ -5,6 +5,7 @@ from random import randrange
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import maybe_bnb as mbnb
 
 from models.arch_util import ResBlock, TimestepEmbedSequential, AttentionBlock, build_local_attention_mask, cGLU, \
     RelativeQKBias
@@ -69,13 +70,14 @@ class ConditioningEncoder(nn.Module):
         super().__init__()
         attn = []
         self.init = nn.Conv1d(spec_dim, hidden_dim, kernel_size=5, stride=2)
-        self.resolution_embedding = nn.Embedding(num_resolutions, hidden_dim)
+        # nn.Embedding
+        self.resolution_embedding = mbnb.nn.Embedding(num_resolutions, hidden_dim)
         self.resolution_embedding.weight.data.mul(.1)  # Reduces the relative influence of this embedding from the start.
         for a in range(attn_blocks):
             attn.append(AttentionBlock(hidden_dim, num_attn_heads, do_checkpoint=do_checkpointing))
             attn.append(ResBlock(hidden_dim, dims=1, checkpointing_enabled=do_checkpointing))
         self.attn = nn.Sequential(*attn)
-        self.out = nn.Linear(hidden_dim, out_dim, bias=False)
+        self.out = mbnb.nn.Linear(hidden_dim, out_dim, bias=False)
         self.dim = hidden_dim
         self.do_checkpointing = do_checkpointing
 
@@ -131,7 +133,8 @@ class TransformerDiffusion(nn.Module):
             nn.SiLU(),
             linear(time_embed_dim, time_proj_dim),
         )
-        self.resolution_embed = nn.Embedding(resolution_steps, time_proj_dim)
+        # nn.Embedding
+        self.resolution_embed = mbnb.nn.Embedding(resolution_steps, time_proj_dim)
         self.conditioning_encoder = ConditioningEncoder(in_channels, model_channels, cond_proj_dim, resolution_steps, num_attn_heads=model_channels//64)
         self.unconditioned_embedding = nn.Parameter(torch.randn(1,cond_proj_dim))
 

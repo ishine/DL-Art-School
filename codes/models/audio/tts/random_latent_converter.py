@@ -3,6 +3,7 @@ import math
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import maybe_bnb as mbnb
 
 from trainer.networks import register_model
 from utils.util import opt_get
@@ -44,7 +45,7 @@ class RandomLatentConverter(nn.Module):
     def __init__(self, channels):
         super().__init__()
         self.layers = nn.Sequential(*[EqualLinear(channels, channels, lr_mul=.1) for _ in range(5)],
-                                    nn.Linear(channels, channels))
+                                    mbnb.nn.Linear(channels, channels))
         self.channels = channels
 
     def forward(self, ref):

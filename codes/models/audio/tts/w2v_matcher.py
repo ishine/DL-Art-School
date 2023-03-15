@@ -7,6 +7,7 @@ from x_transformers import Encoder, Decoder, ContinuousTransformerWrapper
 
 from models.audio.tts.mini_encoder import AudioMiniEncoder
 from trainer.networks import register_model
+import maybe_bnb as mbnb
 
 
 class CheckpointedLayer(nn.Module):
@@ -56,7 +57,8 @@ class Wav2VecMatcher(nn.Module):
         WAV2VEC_CHANNELS = 1024
         self.conditioning_encoder = AudioMiniEncoder(1, model_dim, base_channels=32, depth=6, resnet_blocks=1,
                          attn_blocks=2, num_attn_heads=2, dropout=dropout, downsample_factor=4, kernel_size=5)
-        self.text_embedding = nn.Embedding(num_text_tokens, model_dim)
+        # nn.Embedding
+        self.text_embedding = mbnb.nn.Embedding(num_text_tokens, model_dim)
         self.encoder = CheckpointedXTransformer(
                 max_seq_len=-1,
                 use_pos_emb=False,
@@ -73,8 +75,8 @@ class Wav2VecMatcher(nn.Module):
             )
         self.decoder_start_embedding = nn.Parameter(torch.randn(1,1,model_dim))
         self.decoder_stop_embedding = nn.Parameter(torch.randn(1,model_dim))
-        self.w2v_query_encoder = nn.Linear(WAV2VEC_CHANNELS, model_dim)
-        self.w2v_value_encoder = nn.Linear(WAV2VEC_CHANNELS, model_dim)
+        self.w2v_query_encoder = mbnb.nn.Linear(WAV2VEC_CHANNELS, model_dim)
+        self.w2v_value_encoder = mbnb.nn.Linear(WAV2VEC_CHANNELS, model_dim)
         self.decoder = CheckpointedXTransformer(
                 max_seq_len=-1,  # Should be unused
                 use_pos_emb=False,
