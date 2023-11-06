@@ -1,3 +1,4 @@
+import maybe_bnb 
 import os
 import math
 import argparse
@@ -32,6 +33,11 @@ def init_dist(backend, **kwargs):
 class Trainer:
 
     def init(self, opt_path, opt, launcher):
+        self.use_8bit = opt_get(opt, ['use_8bit'], True)
+        if self.use_8bit:
+            maybe_bnb.populate()
+        else:
+            maybe_bnb.populate(False, False, False, embedding=None)
         self._profile = False
         self.val_compute_psnr = opt_get(opt, ['eval', 'compute_psnr'], False)
         self.val_compute_fea = opt_get(opt, ['eval', 'compute_fea'], False)
@@ -256,12 +262,35 @@ class Trainer:
         if self.current_step % opt['logger']['save_checkpoint_freq'] == 0:
             self.model.consolidate_state()
             if self.rank <= 0:
-                self.logger.info('Saving models and training states.')
+                if opt['logger']['disable_state_saving'] is False:
+                    self.logger.info('Saving models and training states.')
+                else:
+                    self.logger.info('Saving model.')
+
+                if opt['upgrades']['number_of_checkpoints_to_save'] > 0 or \
+                        opt['upgrades']['number_of_states_to_save'] > 0:
+
+                    number_of_states_to_save = opt['upgrades']['number_of_states_to_save'] \
+                        if not opt['logger']['disable_state_saving'] else 0
+
+                    self.logger.info(
+                        f"Leaving only {opt['upgrades']['number_of_checkpoints_to_save']} checkpoints and "
+                        f"{number_of_states_to_save} states"
+                    )
+                    self.model.limit_number_of_checkpoints_and_states(
+                        next(iter(opt['networks'].keys())),
+                        models_number=opt['upgrades']['number_of_checkpoints_to_save'],
+                        state_number=opt['upgrades']['number_of_states_to_save'],
+                    )
+
                 self.model.save(self.current_step)
                 state = {'epoch': self.epoch, 'iter': self.current_step, 'total_data_processed': self.total_training_data_encountered}
                 if self.dataset_debugger is not None:
                     state['dataset_debugger_state'] = self.dataset_debugger.get_state()
-                self.model.save_training_state(state)
+                if opt['logger']['disable_state_saving'] is False:
+                    self.model.save_training_state(state)
+                else:
+                    self.logger.info("State saving is disabled. Skipping state save, you won't be able to resume training from this session.")
             if 'alt_path' in opt['path'].keys():
                 import shutil
                 print("Synchronizing tb_logger to alt_path..")

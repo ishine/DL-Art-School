@@ -1,0 +1,26 @@
+path:
+ #pretrain_model_dvae: '../experiments/dvae.pth'
+  strict_load: true
+  #resume_state: ../experiments/train_imgnet_vqvae_stage1/training_state/0.state   # <-- Set this to resume from a previous training state.
+networks:
+  gpt:
+    type: generator
+    which_model_G: unified_voice2
+    kwargs:
+      layers: 30 # WAS 8
+      model_dim: 1024 # WAS 512
+      heads: 16 # WAS 8
+      max_text_tokens: 402 # WAS 120
+      max_mel_tokens: 604 # WAS 250
+      max_conditioning_inputs: 2 # WAS 1
+      mel_length_compression: 1024
+      number_text_tokens: 256 # supposed to be 255 for newer unified_voice files 
+      number_mel_codes: 8194
+      start_mel_token: 8192
+      stop_mel_token: 8193
+      start_text_token: 255
+      train_solo_embeddings: False # missing in uv3/4
+      use_mel_codes_as_input: True # ditto
+      checkpointing: True
+      freeze_everything_but_position_embeddings: True
+      tortoise_compat: True

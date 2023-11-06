@@ -4,13 +4,15 @@ import torch.nn.functional as F
 from torch import einsum
 
 from utils.weight_scheduler import LinearDecayWeightScheduler
+import maybe_bnb as mbnb
 
 
 class GumbelQuantizer(nn.Module):
     def __init__(self, inp_dim, codebook_dim, num_tokens, straight_through=False):
         super().__init__()
         self.to_logits = nn.Conv1d(inp_dim, num_tokens, 1)
-        self.codebook = nn.Embedding(num_tokens, codebook_dim)
+        # nn.Embedding
+        self.codebook = mbnb.nn.Embedding(num_tokens, codebook_dim)
         self.straight_through = straight_through
         self.temperature_scheduler = LinearDecayWeightScheduler(10, 5000, .9, 2000)
         self.step = 0

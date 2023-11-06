@@ -1,3 +1,135 @@
+# this repo is now maintenance only; please develop a fork || use the mrq repo if you have large features to submit
+
+**NOTICE**: this repo is not endorsed by @neonbjb
+
+15 May 2023 Full Youtube Tutorial For Voice Training With DLAS: [Link](https://youtu.be/OiMRlqcgDL0)
+
+[![image](https://github.com/FurkanGozukara/DL-Art-School/assets/19240467/964f07d1-7be3-43c7-896b-ed1cbb7463da)](https://youtu.be/OiMRlqcgDL0)
+
+#### in progress: [Diffusion model training](#training-the-diffusion-model-wip). Track progress [here](https://github.com/152334H/DL-Art-School/issues/3#issuecomment-1436541887)
+#### in progress: 8bit optimizers (works on Linux, see [here](https://github.com/152334H/DL-Art-School/issues/8#issuecomment-1441850067))
+## **NEW**: (windows) [Training UI](#windows-training-ui-with-conda)
+## [![](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1-KmMuexR9Mv40QHNt_If2YY8nx3rFi4a) [Colab training notes](./COLAB_USAGE.md)
+
+# Tortoise fine-tuning with DLAS
+
+like the [tortoise-tts-fast](https://github.com/152334H/tortoise-tts-fast) project, **the changes in this repo are also licensed as AGPL**, but if I'm being realistic I haven't actually made any new code, the only thing I can really copyright is the config files and this readme.md
+
+## INSTALLATION
+(this will be updated often)
+
+### CLI Install
+
+```sh
+git clone https://github.com/152334H/DL-Art-School
+cd DL-Art-School
+wget https://huggingface.co/Gatozu35/tortoise-tts/resolve/main/dvae.pth -O experiments/dvae.pth # https://huggingface.co/jbetker/tortoise-tts-v2/resolve/3704aea61678e7e468a06d8eea121dba368a798e/.models/dvae.pth
+sha256sum ../DL-Art-School/experiments/dvae.pth | grep a990825371506c16bcf0e8167bf24ccf82f65bb6a1dbcbfcf058d76f9b197e35 # extra check on vqvae checkpoint integrity, feel free to skip this
+cp ~/.cache/tortoise/models/autoregressive.pth experiments # copy the gpt model
+pip install -r codes/requirements.laxed.txt # ONLY TESTED ON python=3.9; use your existing tortoise env if possible
+pip uninstall tensorboard # this is only needed if you want to view tensorboard logs. see https://github.com/pytorch/pytorch/issues/22676
+```
+
+### Windows Training UI with Conda
+
+[![Tutorial](https://img.youtube.com/vi/lnIq4SFFXWs/0.jpg)](https://www.youtube.com/watch?v=lnIq4SFFXWs)
+
+
+This script by @devilismyfriend will install a conda environment named `DLAS` that uses a newer version of cuDNN for faster training:
+
+```bat
+git clone https://github.com/152334H/DL-Art-School
+cd DL-Art-School
+".\Setup DLAS.bat"
+```
+
+This requires that you have [miniconda](https://docs.conda.io/en/latest/miniconda.html)/[anaconda](https://www.anaconda.com/) (with python 3.10) and git installed.
+
+After it finishes setup, you can run it with `".\Start DLAS.cmd"`:
+
+
+![](https://i.imgur.com/knj39lE.png)
+
+
+## CLI USAGE
+1. prepare a dataset (**LJSpeech format** is what's configured; if you can read the code you can use other formats like voxpopuli)
+2. **edit `experiments/EXAMPLE_gpt.yml`**. Read & possibly edit **every line** **with `CHANGEME`** in it. Especially,
+   * change the dataset config (obviously)
+   * reduce batch size if you have less-than 16GB vram
+   * possibly change the learning rate and other hyperparams
+3. run `cd codes && python3 train.py -opt ../experiments/EXAMPLE_gpt.yml`
+   * DO NOT CANCEL THIS until you see `INFO: Saving models and training states.`. All training progress before that line is LOST. (feel free to cancel it if you used bad data or something)
+4. load up the [tortoise-tts-fast](https://github.com/152334H/tortoise-tts-fast) fork, and use the new `--ar-checkpoint` option with `/path/to/DL-Art-School/experiments/<INSERT EXPERIMENT NAME HERE>/models/<MOST RECENT STEPS>_gpt.pth`.
+
+### Training the diffusion model (WIP)
+1. Make sure you have an LJSpeech dataset & a fine-tuned GPT model from the previous instructions.
+2. **edit `experiments/EXAMPLE_diff.yml`**. Everything above applies, but there's also some new things:
+  * More vram is consumed compared to the GPT training; you should reduce batch size accordingly
+	* **`gpt_path`** needs to point to a GPT model.
+	* `after:` parameters adjust warmup steps
+3. run `cd cdoes && python3 train.py -opt ../experiments/EXAMPLE_diff.yml`. Same warning applies
+4. The [tortoise-tts-fast](https://github.com/152334H/tortoise-tts-fast) fork now has a `--diff-checkpoint` flag as well.
+
+### continuing a training session
+_This section will be removed once I write a script to automate it_
+
+If you have to continue an incomplete training session for any reason, then:
+
+1. Find the most recently saved training state file. If the last saved step was `$step`, and your training session was named `$trainingName`, then the file will be at `../experiments/$trainingName/training_state/$step.state`
+2. Edit the `.yml` config file's `path:`
+   ```yml
+   path:
+     #pretrain_model_gpt: '../experiments/autoregressive.pth' # COMMENT THIS LINE OUT
+     strict_load: true
+     #resume_state: ../experiments/$trainingName/training_state/$step.state
+   ```
+
+### Hyperparameters vs dataset size
+_The colab training nodebook will automatically find good hyperparams based on the dataset size. This info is merely included for CLI users || public information_.
+
+Note that `epoch_steps == dataset_size//batch_size`; partial batches are discarded by the trainer.
+
+The hyperparameters configured in the example yml are sane defaults for a _reasonably large dataset_ of a few thousand samples. If your dataset is much smaller (50-500), you should make the following changes:
+* batch size reduction. Specifically, ensure the batch size used is reasonably close to being a clean divisor of the provided dataset; the DLAS trainer (currently) drops partially filled batches.
+* `gen_lr_steps`. The smaller your dataset, the faster you should be decaying the learning rate. You should have no more than 10 epoches before the first decay, i.e. the first number in `gen_lr_steps` should be smaller than `epoch_steps * 10`. (personal tests indicate that loss starts going up if there's no decay by epoch 20)
+* `print_freq`, `val_freq`, `save_checkpoint_freq`: These should all be adjusted to dataset size as well. Recommendation: `val_freq == save_checkpoint_freq == print_freq*3`; `print_freq == min(epoch_steps,100)`
+
+## RESULTS
+For a very basic and simple task, I trained the ar model for 500 steps, with batch size 128, on a dataset of [Kim Kitsuragi](https://discoelysium.fandom.com/wiki/Kim_Kitsuragi) that contained ~4.5k wav files. This means I trained for about 11 epoches, which I'm not sure is a good thing or not.
+
+| CONDITIONING | CHECKPOINT | SAMPLEs | verdict
+| - | - | - | - |
+| KK | original | [here](./voice_samples/kk_orig) | - |
+| KK | 500_gpt.pth | [here](./voice_samples/kk_500) | Much closer to the real character! | 
+| emma | original | [here](https://github.com/152334H/tortoise-tts-fast/tree/main/optimized_examples/A/very_fast-ar16) | - | 
+| emma | 500_gpt.pth | [here](./voice_samples/kk_500_emma) | A mix of "well-transferred accent" (surprising!) && "catastropic memorisation" (expected) | 
+
+![image](https://user-images.githubusercontent.com/54623771/219252253-7ca44efe-5d49-4ae5-9d4a-5add62f5cd77.png)
+
+### Other experiments so far
+
+- Fine-tuning with [non-English datasets (Marathi)](https://github.com/152334H/DL-Art-School/discussions/12), [YouTube examples](https://youtu.be/kzBOrMw7oBk)
+- other experiments [by me](https://github.com/152334H/DL-Art-School/issues/1)
+
+## [Helping out](https://github.com/152334H/DL-Art-School/discussions/4)
+This project is in its infancy, and is in desperate need of contributors. If you have any suggestions / ideas, please visit the [discussions](https://github.com/152334H/DL-Art-School/discussions/4) page. If you have programming skills, try making a pull request! 
+
+### Extra community stuff
+
+- (windows only) [Automatic LJSpeech dataset creation && audio transcription with Whisper](https://github.com/devilismyfriend/ozen-toolkit)
+- (linux only) Saving and transcribing audio played from speakers, [link](https://github.com/tekakutli/tortoise-scripts)
+
+## todo
+- [X] run at least 1 epoch of autoregressive training with clear loss decrease
+- [X] upload training configs
+- [X] check that results are actually good (!!)
+- [X] create a colab training notebook
+- [ ] train other submodels (diffusion, clvp)
+- [ ] offload all of the work to other contributors
+
+
+---
+
 # Deep Learning Art School
 
 Send your Pytorch model to art class!

@@ -1,5 +1,6 @@
 from torch.cuda.amp import GradScaler
 from torch.distributed.optim import ZeroRedundancyOptimizer
+from lion_pytorch import Lion
 
 from utils.loss_accumulator import LossAccumulator
 from torch.nn import Module
@@ -12,6 +13,7 @@ from utils.util import recursively_detach, opt_get, clip_grad_norm
 
 logger = logging.getLogger('base')
 
+import maybe_bnb as mbnb
 
 # Defines the expected API for a single training step
 class ConfigurableStep(Module):
@@ -82,7 +84,8 @@ class ConfigurableStep(Module):
             import torch.nn as nn
             norm_modules = (nn.BatchNorm2d, nn.InstanceNorm2d, nn.BatchNorm1d, nn.InstanceNorm1d,
                             nn.BatchNorm3d, nn.InstanceNorm3d, nn.GroupNorm, nn.LayerNorm)
-            emb_modules = (nn.Embedding, nn.EmbeddingBag)
+            # nn.Embedding
+            emb_modules = (mbnb.nn.Embedding, nn.EmbeddingBag)
             param_names_notweights = set()
             all_param_names = set()
             param_map = {}
@@ -123,9 +126,22 @@ class ConfigurableStep(Module):
                     { 'params': params_weights, 'weight_decay': opt_get(opt_config, ['weight_decay'], 0) },
                     { 'params': params_notweights, 'weight_decay': 0 }
                 ]
-                opt = torch.optim.AdamW(groups, lr=opt_config['lr'],
+                # torch.optim.AdamW
+                opt = mbnb.optim.AdamW(groups, lr=opt_config['lr'],
                                        weight_decay=opt_get(opt_config, ['weight_decay'], 1e-2),
                                        betas=(opt_get(opt_config, ['beta1'], .9), opt_get(opt_config, ['beta2'], .999)))
+                opt._group_names = [params_names_weights, params_names_notweights]
+            elif self.step_opt['optimizer'] == 'lion':
+                groups = [
+                    { 'params': params_weights, 'weight_decay': opt_get(opt_config, ['weight_decay'], 0) },
+                    { 'params': params_notweights, 'weight_decay': 0 }
+                ]
+                opt = Lion(
+                    groups, lr=opt_config['lr'],
+                    betas=(opt_get(opt_config, ['beta1'], .9), opt_get(opt_config, ['beta2'], .999)),
+                    weight_decay=opt_get(opt_config, ['weight_decay'], 1e-2),
+                    use_triton=opt_get(opt_config, ['triton'], False),
+                )
                 opt._group_names = [params_names_weights, params_names_notweights]
             elif self.step_opt['optimizer'] == 'mu_adamw':
                 groups = [
@@ -141,14 +157,16 @@ class ConfigurableStep(Module):
                 # The torch ZeRO implementation does not seem to support parameter groups, so do not shard the non-weighted
                 # parameters and just use a normal AdamW implementation. In a large network, these weights will normally
                 # be a tiny fraction of the total weights.
-                opt_unweighted = torch.optim.AdamW(params_notweights, lr=opt_config['lr'], weight_decay=0,
+                # torch.optim.AdamW
+                opt_unweighted = mbnb.optim.AdamW(params_notweights, lr=opt_config['lr'], weight_decay=0,
                                        betas=(opt_get(opt_config, ['beta1'], .9), opt_get(opt_config, ['beta2'], .999)))
                 opt_unweighted._config = opt_config
                 opt_unweighted._config['network'] = net_name
                 opt_unweighted._group_names = []
                 self.optimizers.append(opt_unweighted)
 
-                opt = ZeroRedundancyOptimizer(params_weights, optimizer_class=torch.optim.AdamW, lr=opt_config['lr'],
+                # torch.optim.AdamW
+                opt = ZeroRedundancyOptimizer(params_weights, optimizer_class=mbnb.optim.AdamW, lr=opt_config['lr'],
                                        weight_decay=opt_get(opt_config, ['weight_decay'], 1e-2),
                                        betas=(opt_get(opt_config, ['beta1'], .9), opt_get(opt_config, ['beta2'], .999)))
                 opt.param_groups[0]['initial_lr'] = opt_config['lr']
@@ -162,7 +180,8 @@ class ConfigurableStep(Module):
                 opt._group_names = sorted(list(all_param_names))
             elif self.step_opt['optimizer'] == 'lamb':
                 from trainer.optimizers.lamb import Lamb
-                opt_unweighted = torch.optim.AdamW(params_notweights, lr=opt_config['lr'], weight_decay=0,
+                # torch.optim.AdamW
+                opt_unweighted = mbnb.optim.AdamW(params_notweights, lr=opt_config['lr'], weight_decay=0,
                                        betas=(opt_get(opt_config, ['beta1'], .9), opt_get(opt_config, ['beta2'], .999)))
                 opt_unweighted._config = opt_config
                 opt_unweighted._config['network'] = net_name

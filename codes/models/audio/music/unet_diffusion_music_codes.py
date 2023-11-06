@@ -8,6 +8,7 @@ import torch as th
 import torch.nn as nn
 import torch.nn.functional as F
 import torchvision  # For debugging, not actually used.
+import maybe_bnb as mbnb
 
 from models.audio.music.gpt_music import GptMusicLower
 from models.audio.music.music_quantizer import MusicQuantizer
@@ -490,7 +491,7 @@ class UNetMusicModel(nn.Module):
         )
 
         if self.ar_prior:
-            self.ar_input = nn.Linear(input_vec_dim, model_channels)
+            self.ar_input = mbnb.nn.Linear(input_vec_dim, model_channels)
             self.ar_prior_intg = Encoder(
                     dim=model_channels,
                     depth=4,
@@ -504,7 +505,7 @@ class UNetMusicModel(nn.Module):
                     ff_mult=1,
                 )
         else:
-            self.input_converter = nn.Linear(input_vec_dim, model_channels)
+            self.input_converter = mbnb.nn.Linear(input_vec_dim, model_channels)
             self.code_converter = Encoder(
                         dim=model_channels,
                         depth=4,
@@ -521,7 +522,8 @@ class UNetMusicModel(nn.Module):
         self.x_processor = conv_nd(dims, in_channels, model_channels, 3, padding=1)
 
         if self.num_classes is not None:
-            self.label_emb = nn.Embedding(num_classes, time_embed_dim)
+            # nn.Embedding
+            self.label_emb = mbnb.nn.Embedding(num_classes, time_embed_dim)
         self.use_raw_y_as_embedding = use_raw_y_as_embedding
         assert not ((self.num_classes is not None) and use_raw_y_as_embedding)  # These are mutually-exclusive.
 

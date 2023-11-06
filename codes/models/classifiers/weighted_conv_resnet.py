@@ -11,6 +11,7 @@ __all__ = ['ResNet', 'resnet18', 'resnet34', 'resnet50', 'resnet101',
 from models.vqvae.scaled_weight_conv import ScaledWeightConv
 from trainer.networks import register_model
 from utils.util import checkpoint
+import maybe_bnb as mbnb
 
 model_urls = {
     'resnet18': 'https://download.pytorch.org/models/resnet18-5c106cde.pth',
@@ -213,7 +214,7 @@ class ResNet(nn.Module):
         self.layer4 = self._make_layer(block, 512, layers[3], breadth, stride=2,
                                        dilate=replace_stride_with_dilation[2])
         self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
-        self.fc = nn.Linear(512 * block.expansion, num_classes)
+        self.fc = mbnb.nn.Linear(512 * block.expansion, num_classes)
 
         for m in self.modules():
             if isinstance(m, ScaledWeightConv):

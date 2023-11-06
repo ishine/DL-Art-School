@@ -28,6 +28,7 @@ except:
     APEX_AVAILABLE = False
 
 assert torch.cuda.is_available(), 'You need to have an Nvidia GPU with CUDA installed.'
+import maybe_bnb as mbnb
 
 num_cores = multiprocessing.cpu_count()
 
@@ -351,7 +352,7 @@ class RGBBlock(nn.Module):
     def __init__(self, latent_dim, input_channel, upsample, rgba=False):
         super().__init__()
         self.input_channel = input_channel
-        self.to_style = nn.Linear(latent_dim, input_channel)
+        self.to_style = mbnb.nn.Linear(latent_dim, input_channel)
 
         out_filters = 3 if not rgba else 4
         self.conv = Conv2DMod(input_channel, out_filters, 1, demod=False)
@@ -489,16 +490,16 @@ class GeneratorBlockWithStructure(nn.Module):
 
         # Uses stylegan1 style blocks for injecting structural latent.
         self.conv0 = EqualConv2d(input_channels, filters, 3, padding=1)
-        self.to_noise0 = nn.Linear(1, filters)
+        self.to_noise0 = mbnb.nn.Linear(1, filters)
         self.noise0 = equal_lr(NoiseInjection(filters))
         self.adain0 = AdaptiveInstanceNorm(filters, latent_dim)
 
-        self.to_style1 = nn.Linear(latent_dim, filters)
-        self.to_noise1 = nn.Linear(1, filters)
+        self.to_style1 = mbnb.nn.Linear(latent_dim, filters)
+        self.to_noise1 = mbnb.nn.Linear(1, filters)
         self.conv1 = Conv2DMod(filters, filters, 3)
 
-        self.to_style2 = nn.Linear(latent_dim, filters)
-        self.to_noise2 = nn.Linear(1, filters)
+        self.to_style2 = mbnb.nn.Linear(latent_dim, filters)
+        self.to_noise2 = mbnb.nn.Linear(1, filters)
         self.conv2 = Conv2DMod(filters, filters, 3)
 
         self.activation = leaky_relu()
@@ -540,12 +541,12 @@ class GeneratorBlock(nn.Module):
             self.structure_conv = nn.Conv2d(3, input_channels, 3, padding=1)
             input_channels = input_channels * 2
 
-        self.to_style1 = nn.Linear(latent_dim, input_channels)
-        self.to_noise1 = nn.Linear(1, filters)
+        self.to_style1 = mbnb.nn.Linear(latent_dim, input_channels)
+        self.to_noise1 = mbnb.nn.Linear(1, filters)
         self.conv1 = Conv2DMod(input_channels, filters, 3)
 
-        self.to_style2 = nn.Linear(latent_dim, filters)
-        self.to_noise2 = nn.Linear(1, filters)
+        self.to_style2 = mbnb.nn.Linear(latent_dim, filters)
+        self.to_noise2 = mbnb.nn.Linear(1, filters)
         self.conv2 = Conv2DMod(filters, filters, 3)
 
         self.activation = leaky_relu()
@@ -724,7 +725,7 @@ class StyleGan2GeneratorWithLatent(nn.Module):
 
     def _init_weights(self):
         for m in self.modules():
-            if type(m) in {nn.Conv2d, nn.Linear} and hasattr(m, 'weight'):
+            if type(m) in {nn.Conv2d, mbnb.nn.Linear} and hasattr(m, 'weight'):
                 nn.init.kaiming_normal_(m.weight, a=0, mode='fan_in', nonlinearity='leaky_relu')
 
         for block in self.gen.blocks:
@@ -804,7 +805,7 @@ class StyleGan2Discriminator(nn.Module):
 
         self.final_conv = nn.Conv2d(chan_last, chan_last, 3, padding=1)
         self.flatten = Flatten()
-        self.to_logit = nn.Linear(latent_dim, 1)
+        self.to_logit = mbnb.nn.Linear(latent_dim, 1)
 
         self._init_weights()
 
@@ -836,7 +837,7 @@ class StyleGan2Discriminator(nn.Module):
 
     def _init_weights(self):
         for m in self.modules():
-            if type(m) in {nn.Conv2d, nn.Linear}:
+            if type(m) in {nn.Conv2d, mbnb.nn.Linear}:
                 nn.init.kaiming_normal_(m.weight, a=0, mode='fan_in', nonlinearity='leaky_relu')
 
 

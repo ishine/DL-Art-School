@@ -5,6 +5,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch import autocast
+import maybe_bnb as mbnb
 
 from models.diffusion.nn import timestep_embedding, normalization, zero_module, conv_nd, linear
 from models.diffusion.unet_diffusion import TimestepEmbedSequential, TimestepBlock, QKVAttentionLegacy
@@ -193,7 +194,9 @@ class DiffusionTtsFlat(nn.Module):
         # This model is meant to be able to be trained on both for efficiency purposes - it is far less computationally
         # complex to generate tokens, while generating latents will normally mean propagating through a deep autoregressive
         # transformer network.
-        self.code_embedding = nn.Embedding(in_tokens, model_channels)
+
+        # nn.Embedding
+        self.code_embedding = mbnb.nn.Embedding(in_tokens, model_channels)
         self.code_converter = nn.Sequential(
             AttentionBlock(model_channels, num_heads, relative_pos_embeddings=True),
             AttentionBlock(model_channels, num_heads, relative_pos_embeddings=True),

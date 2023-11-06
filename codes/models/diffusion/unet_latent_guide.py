@@ -26,6 +26,7 @@ from models.diffusion.nn import (
 )
 from trainer.networks import register_model
 from utils.util import checkpoint
+import maybe_bnb as mbnb
 
 
 class AttentionPool2d(nn.Module):
@@ -476,7 +477,8 @@ class UNetModel(nn.Module):
         )
 
         if self.num_classes is not None:
-            self.label_emb = nn.Embedding(num_classes, time_embed_dim)
+            # nn.Embedding
+            self.label_emb = mbnb.nn.Embedding(num_classes, time_embed_dim)
 
         self.input_blocks = nn.ModuleList(
             [
@@ -736,7 +738,7 @@ class ResNetEncoder(nn.Module):
                                            dilate=replace_stride_with_dilation[2])
             f=512
         self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
-        self.fc = nn.Linear(f * block.expansion, output_dim)
+        self.fc = mbnb.nn.Linear(f * block.expansion, output_dim)
 
         for m in self.modules():
             if isinstance(m, nn.Conv2d):

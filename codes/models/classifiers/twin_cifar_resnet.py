@@ -11,6 +11,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import maybe_bnb as mbnb
 
 from trainer.networks import register_model
 
@@ -101,7 +102,7 @@ class ResNet(nn.Module):
         self.conv4_x = self._make_layer(block, 128, num_block[2], 2)
         self.conv5_x = self._make_layer(block, 256, num_block[3], 2)
         self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
-        self.fc = nn.Linear(256 * block.expansion, num_classes)
+        self.fc = mbnb.nn.Linear(256 * block.expansion, num_classes)
 
     def _make_layer(self, block, out_channels, num_blocks, stride):
         """make resnet layers(by layer i didnt mean this 'layer' was the

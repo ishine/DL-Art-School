@@ -9,6 +9,7 @@ import torch.nn.utils.spectral_norm as SpectralNorm
 from math import sqrt
 
 from utils.util import checkpoint
+import maybe_bnb as mbnb
 
 
 def exists(val):
@@ -73,7 +74,7 @@ def initialize_weights(net_l, scale=1):
                 m.weight.data *= scale  # for residual block
                 if m.bias is not None:
                     m.bias.data.zero_()
-            elif isinstance(m, nn.Linear):
+            elif isinstance(m, mbnb.nn.Linear):
                 init.kaiming_normal_(m.weight, a=0, mode='fan_in')
                 m.weight.data *= scale
                 if m.bias is not None:
@@ -108,7 +109,7 @@ def default_init_weights(module, scale=1):
         if isinstance(m, nn.Conv2d):
             kaiming_init(m, a=0, mode='fan_in', bias=0)
             m.weight.data *= scale
-        elif isinstance(m, nn.Linear):
+        elif isinstance(m, mbnb.nn.Linear):
             kaiming_init(m, a=0, mode='fan_in', bias=0)
             m.weight.data *= scale
 
@@ -141,7 +142,7 @@ def linear(*args, **kwargs):
     """
     Create a linear module.
     """
-    return nn.Linear(*args, **kwargs)
+    return mbnb.nn.Linear(*args, **kwargs)
 
 
 def avg_pool_nd(dims, *args, **kwargs):

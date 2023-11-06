@@ -6,6 +6,7 @@ from models.arch_util import ConvGnLelu, default_init_weights, make_layer
 from models.diffusion.nn import timestep_embedding
 from trainer.networks import register_model
 from utils.util import checkpoint
+import maybe_bnb as mbnb
 
 
 # Conditionally uses torch's checkpoint functionality if it is enabled in the opt file.
@@ -28,7 +29,7 @@ class ResidualDenseBlock(nn.Module):
             self.first_conv = ConvGnLelu(mid_channels, mid_channels, activation=True, norm=False, bias=True)
             self.emb_layers = nn.Sequential(
                 nn.SiLU(),
-                nn.Linear(
+                mbnb.nn.Linear(
                     mid_channels*4,
                     mid_channels,
                 ),
@@ -143,9 +144,9 @@ class RRDBNet(nn.Module):
         # Guided diffusion uses a time embedding.
         time_embed_dim = mid_channels * 4
         self.time_embed = nn.Sequential(
-            nn.Linear(mid_channels, time_embed_dim),
+            mbnb.nn.Linear(mid_channels, time_embed_dim),
             nn.SiLU(),
-            nn.Linear(time_embed_dim, time_embed_dim),
+            mbnb.nn.Linear(time_embed_dim, time_embed_dim),
         )
 
         self.body = make_layer(

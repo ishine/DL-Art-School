@@ -18,7 +18,7 @@ if __name__ == '__main__':
     os.makedirs(args.output_path + "_t1", exist_ok=True)
 
     for cmd in cmds:
-        p = Popen("python " + cmd)
+        p = Popen("python " + cmd, shell=True)
         p.wait()
 
     shutil.rmtree(args.output_path + "_t1")

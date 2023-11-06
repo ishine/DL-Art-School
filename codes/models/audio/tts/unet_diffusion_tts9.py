@@ -5,6 +5,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch import autocast
 from x_transformers import Encoder
+import maybe_bnb as mbnb
 
 from models.diffusion.nn import timestep_embedding, normalization, zero_module, conv_nd, linear
 from models.diffusion.unet_diffusion import AttentionBlock, TimestepEmbedSequential, \
@@ -206,7 +207,8 @@ class DiffusionTts(nn.Module):
         # complex to generate tokens, while generating latents will normally mean propagating through a deep autoregressive
         # transformer network.
         self.code_converter = nn.Sequential(
-            nn.Embedding(in_tokens, conditioning_dim),
+            # nn.Embedding
+            mbnb.nn.Embedding(in_tokens, conditioning_dim),
             CheckpointedXTransformerEncoder(
                 needs_permute=False,
                 max_seq_len=-1,

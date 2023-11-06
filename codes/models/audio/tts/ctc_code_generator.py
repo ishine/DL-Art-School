@@ -3,6 +3,7 @@ from random import random
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import maybe_bnb as mbnb
 
 from models.audio.tts.unet_diffusion_tts7 import CheckpointedLayer
 from models.lucidrains.x_transformers import Encoder
@@ -36,9 +37,12 @@ class CtcCodeGenerator(nn.Module):
         self.ctc_codes = ctc_codes
         pred_codes = (max_pad+1)*(max_repeat+1)
 
-        self.position_embedding = nn.Embedding(max_length, model_dim)
-        self.codes_embedding = nn.Embedding(ctc_codes, model_dim)
-        self.recursive_embedding = nn.Embedding(pred_codes, model_dim)
+        # nn.Embedding
+        self.position_embedding = mbnb.nn.Embedding(max_length, model_dim)
+        # nn.Embedding
+        self.codes_embedding = mbnb.nn.Embedding(ctc_codes, model_dim)
+        # nn.Embedding
+        self.recursive_embedding = mbnb.nn.Embedding(pred_codes, model_dim)
         self.mask_embedding = nn.Parameter(torch.randn(model_dim))
         self.encoder = Encoder(
                     dim=model_dim,
@@ -50,8 +54,8 @@ class CtcCodeGenerator(nn.Module):
                     ff_glu=True,
                     rotary_pos_emb=True,
                 )
-        self.pred_head = nn.Linear(model_dim, pred_codes)
-        self.confidence_head = nn.Linear(model_dim, 1)
+        self.pred_head = mbnb.nn.Linear(model_dim, pred_codes)
+        self.confidence_head = mbnb.nn.Linear(model_dim, 1)
 
     def inference(self, codes, pads, repeats):
         position_h = self.position_embedding(torch.arange(0, codes.shape[-1], device=codes.device))

@@ -1,3 +1,4 @@
+
 import logging
 from collections import OrderedDict
 
@@ -6,6 +7,7 @@ import torch.nn as nn
 import trainer.networks as networks
 import trainer.lr_scheduler as lr_scheduler
 from .base_model import BaseModel
+import maybe_bnb as mbnb
 
 logger = logging.getLogger('base')
 
@@ -40,7 +42,8 @@ class FeatureModel(BaseModel):
                 else:
                     if self.rank <= 0:
                         logger.warning('Params [{:s}] will not optimize.'.format(k))
-            self.optimizer_G = torch.optim.Adam(optim_params, lr=train_opt['lr_G'],
+            # torch.optim.Adam
+            self.optimizer_G = ml.Adam(optim_params, lr=train_opt['lr_G'],
                                                 weight_decay=wd_G,
                                                 betas=(train_opt['beta1_G'], train_opt['beta2_G']))
             self.optimizers.append(self.optimizer_G)

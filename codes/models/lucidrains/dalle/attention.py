@@ -7,6 +7,7 @@ import torch.nn.functional as F
 from einops import rearrange, repeat
 
 from rotary_embedding_torch import apply_rotary_emb
+import maybe_bnb as mbnb
 
 # helpers
 
@@ -47,9 +48,9 @@ class Attention(nn.Module):
         self.stable = stable
         self.causal = causal
 
-        self.to_qkv = nn.Linear(dim, inner_dim * 3, bias = False)
+        self.to_qkv = mbnb.nn.Linear(dim, inner_dim * 3, bias = False)
         self.to_out = nn.Sequential(
-            nn.Linear(inner_dim, dim),
+            mbnb.nn.Linear(inner_dim, dim),
             nn.Dropout(dropout)
         )
 
@@ -102,10 +103,10 @@ class SparseConvCausalAttention(nn.Module):
 
         self.stable = stable
 
-        self.to_qkv = nn.Linear(dim, inner_dim * 3, bias = False)
+        self.to_qkv = mbnb.nn.Linear(dim, inner_dim * 3, bias = False)
 
         self.to_out = nn.Sequential(
-            nn.Linear(inner_dim, dim),
+            mbnb.nn.Linear(inner_dim, dim),
             nn.Dropout(dropout)
         )
 
@@ -222,10 +223,10 @@ class SparseAxialCausalAttention(nn.Module):
 
         self.stable = stable
 
-        self.to_qkv = nn.Linear(dim, inner_dim * 3, bias = False)
+        self.to_qkv = mbnb.nn.Linear(dim, inner_dim * 3, bias = False)
 
         self.to_out = nn.Sequential(
-            nn.Linear(inner_dim, dim),
+            mbnb.nn.Linear(inner_dim, dim),
             nn.Dropout(dropout)
         )
 

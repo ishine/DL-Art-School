@@ -3,9 +3,9 @@ from collections import Counter
 from collections import defaultdict
 import torch
 from torch.optim.lr_scheduler import _LRScheduler
+import maybe_bnb as mbnb
 
 from utils.util import opt_get
-
 
 def get_scheduler_for_name(name, optimizers, scheduler_opt):
     schedulers = []
@@ -136,7 +136,8 @@ class CosineAnnealingLR_Restart(_LRScheduler):
 
 
 if __name__ == "__main__":
-    optimizer = torch.optim.Adam([torch.zeros(3, 64, 3, 3)], lr=1e-4, weight_decay=0,
+    #torch.optim.Adam
+    optimizer = ml.Adam([torch.zeros(3, 64, 3, 3)], lr=1e-4, weight_decay=0,
                                  betas=(0.9, 0.99))
     ##############################
     # MultiStepLR_Restart

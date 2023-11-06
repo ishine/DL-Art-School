@@ -20,6 +20,7 @@ from models.diffusion.nn import (
 )
 from trainer.networks import register_model
 from utils.util import checkpoint
+import maybe_bnb as mbnb
 
 
 class AttentionPool2d(nn.Module):
@@ -515,7 +516,8 @@ class UNetModel(nn.Module):
         )
 
         if self.num_classes is not None:
-            self.label_emb = nn.Embedding(num_classes, time_embed_dim)
+            # nn.Embedding
+            self.label_emb = mbnb.nn.Embedding(num_classes, time_embed_dim)
         self.use_raw_y_as_embedding = use_raw_y_as_embedding
         assert not ((self.num_classes is not None) and use_raw_y_as_embedding)  # These are mutually-exclusive.
 
@@ -867,16 +869,16 @@ class EncoderUNetModel(nn.Module):
             )
         elif pool == "spatial":
             self.out = nn.Sequential(
-                nn.Linear(self._feature_size, 2048),
+                mbnb.nn.Linear(self._feature_size, 2048),
                 nn.ReLU(),
-                nn.Linear(2048, self.out_channels),
+                mbnb.nn.Linear(2048, self.out_channels),
             )
         elif pool == "spatial_v2":
             self.out = nn.Sequential(
-                nn.Linear(self._feature_size, 2048),
+                mbnb.nn.Linear(self._feature_size, 2048),
                 normalization(2048),
                 nn.SiLU(),
-                nn.Linear(2048, self.out_channels),
+                mbnb.nn.Linear(2048, self.out_channels),
             )
         else:
             raise NotImplementedError(f"Unexpected {pool} pooling")

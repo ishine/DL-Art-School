@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import numpy as np
+import maybe_bnb as mbnb
 
 
 __all__ = ['FixupResNet', 'fixup_resnet18', 'fixup_resnet34', 'fixup_resnet50', 'fixup_resnet101', 'fixup_resnet152']
@@ -108,8 +109,8 @@ class FixupResNet(nn.Module):
         self.layer4 = self._make_layer(block, num_filters*8, layers[3], stride=2)
         self.bias2 = nn.Parameter(torch.zeros(1))
         reduced_img_sz = int(input_img_size / 32)
-        self.fc1 = nn.Linear(num_filters * 8 * reduced_img_sz * reduced_img_sz, 100)
-        self.fc2 = nn.Linear(100, num_classes)
+        self.fc1 = mbnb.nn.Linear(num_filters * 8 * reduced_img_sz * reduced_img_sz, 100)
+        self.fc2 = mbnb.nn.Linear(100, num_classes)
 
         for m in self.modules():
             if isinstance(m, FixupBasicBlock):
@@ -124,7 +125,7 @@ class FixupResNet(nn.Module):
                 if m.downsample is not None:
                     nn.init.normal_(m.downsample.weight, mean=0, std=np.sqrt(2 / (m.downsample.weight.shape[0] * np.prod(m.downsample.weight.shape[2:]))))
             '''
-            elif isinstance(m, nn.Linear):
+            elif isinstance(m, mbnb.nn.Linear):
                 nn.init.constant_(m.weight, 0)
                 nn.init.constant_(m.bias, 0)'''
 

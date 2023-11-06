@@ -4,6 +4,7 @@ from time import time
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import maybe_bnb as mbnb
 
 from models.arch_util import ResBlock
 from models.audio.music.gpt_music2 import UpperEncoder, GptMusicLower
@@ -27,7 +28,8 @@ def is_sequence(t):
 class MultiGroupEmbedding(nn.Module):
     def __init__(self, tokens, groups, dim):
         super().__init__()
-        self.m = nn.ModuleList([nn.Embedding(tokens, dim // groups) for _ in range(groups)])
+        # nn.Embedding
+        self.m = nn.ModuleList([mbnb.nn.Embedding(tokens, dim // groups) for _ in range(groups)])
 
     def forward(self, x):
         h = [embedding(x[:, :, i]) for i, embedding in enumerate(self.m)]
@@ -68,7 +70,7 @@ class ConcatAttentionBlock(TimestepBlock):
         self.prenorm = RMSScaleShiftNorm(trunk_dim, embed_dim=time_embed_dim, bias=False)
         self.block1 = SubBlock(trunk_dim, contraction_dim, heads, dropout)
         self.block2 = SubBlock(trunk_dim+contraction_dim*2, contraction_dim, heads, dropout)
-        self.out = nn.Linear(contraction_dim*4, trunk_dim, bias=False)
+        self.out = mbnb.nn.Linear(contraction_dim*4, trunk_dim, bias=False)
         self.out.weight.data.zero_()
 
     def forward(self, x, timestep_emb, rotary_emb):
@@ -129,7 +131,7 @@ class TransformerDiffusion(nn.Module):
         )
 
         prenet_heads = prenet_channels//64
-        self.input_converter = nn.Linear(input_vec_dim, prenet_channels)
+        self.input_converter = mbnb.nn.Linear(input_vec_dim, prenet_channels)
         self.code_converter = Encoder(
                     dim=prenet_channels,
                     depth=prenet_layers,
@@ -145,7 +147,7 @@ class TransformerDiffusion(nn.Module):
 
         self.unconditioned_embedding = nn.Parameter(torch.randn(1,1,prenet_channels))
         self.rotary_embeddings = RotaryEmbedding(rotary_emb_dim)
-        self.intg = nn.Linear(prenet_channels*2, model_channels)
+        self.intg = mbnb.nn.Linear(prenet_channels*2, model_channels)
         self.layers = TimestepRotaryEmbedSequential(*[ConcatAttentionBlock(model_channels, contraction_dim, time_embed_dim, num_heads, dropout) for _ in range(num_layers)])
 
         self.out = nn.Sequential(

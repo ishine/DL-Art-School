@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+import maybe_bnb as mbnb
 
 
 from models.diffusion.nn import normalization, conv_nd, zero_module
@@ -138,7 +139,7 @@ class AudioMiniEncoderWithClassifierHead(nn.Module):
     def __init__(self, classes, distribute_zero_label=True, **kwargs):
         super().__init__()
         self.enc = AudioMiniEncoder(**kwargs)
-        self.head = nn.Linear(self.enc.dim, classes)
+        self.head = mbnb.nn.Linear(self.enc.dim, classes)
         self.num_classes = classes
         self.distribute_zero_label = distribute_zero_label
 
@@ -183,7 +184,7 @@ class QueryProvidedAttentionBlock(nn.Module):
             ), f"q,k,v channels {channels} is not divisible by num_head_channels {num_head_channels}"
             self.num_heads = channels // num_head_channels
         self.norm = normalization(channels)
-        self.q = nn.Linear(channels, channels)
+        self.q = mbnb.nn.Linear(channels, channels)
         self.qnorm = nn.LayerNorm(channels)
         self.kv = conv_nd(1, channels, channels*2, 1)
         if use_new_attention_order:

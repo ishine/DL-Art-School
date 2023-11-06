@@ -3,6 +3,7 @@ import logging
 import os
 from math import sqrt
 from time import time
+from pathlib import Path
 
 import torch
 from torch import distributed
@@ -21,6 +22,9 @@ import torchvision.utils as utils
 
 from utils.loss_accumulator import LossAccumulator, InfStorageLossAccumulator
 from utils.util import opt_get, denormalize
+
+from typing import Literal, Union
+import maybe_bnb as mbnb
 
 logger = logging.getLogger('base')
 
@@ -337,7 +341,7 @@ class ExtensibleTrainer(BaseModel):
                     for net in self.networks.values():
                         for mod in net.modules():
                             fan_in = -1
-                            if isinstance(mod, nn.Linear):
+                            if isinstance(mod, mbnb.nn.Linear):
                                 fan_in = mod.weight.data.shape[1]
                             elif isinstance(mod, nn.Conv1d):
                                 fan_in = mod.weight.data.shape[0]
@@ -545,6 +549,39 @@ class ExtensibleTrainer(BaseModel):
                         self.emas[name] = self.emas[name].cpu()
                 if hasattr(net.module, 'network_loaded'):
                     net.module.network_loaded()
+
+    def limit_number_of_checkpoints_and_states(
+            self, network_name: Union[str, Literal['ddpm', 'gpt']], models_number: int = 2, state_number: int = 2
+    ) -> None:
+        if network_name not in ['ddpm', 'gpt']:
+            raise ValueError(
+                "Expected network name (opt['networks'][*]) to be 'ddpm' or 'gpt', but got %s" % network_name,
+            )
+
+        models_path = Path(self.opt['path']['models']).parent / 'models'
+        states_path = Path(self.opt['path']['models']).parent / 'training_state'
+        files_pth, files_ema_pth, files_state = [], [], []
+
+        if models_number > 0:
+            files_pth = sorted(
+                models_path.glob(f'*_{network_name}.pth'), reverse=True, key=lambda p: int(p.stem.split('_')[0]),
+            )
+            files_ema_pth = sorted(
+                models_path.glob(f'*_{network_name}_ema.pth'), reverse=True, key=lambda p: int(p.stem.split('_')[0]),
+            )
+
+        if not self.opt['logger']['disable_state_saving'] and state_number > 0:
+            files_state = sorted(states_path.glob('*.state'), reverse=True, key=lambda p: int(p.stem))
+
+        files_to_keep = files_pth[:models_number - 1] \
+            + files_ema_pth[:models_number - 1] \
+            + files_state[:state_number - 1]
+
+        for file_path in files_pth + files_ema_pth + files_state:
+            if file_path not in files_to_keep:
+                print(f'Removing: {file_path}')
+                open(file_path, 'w').close()
+                os.remove(file_path)
 
     def save(self, iter_step):
         for name, net in self.networks.items():

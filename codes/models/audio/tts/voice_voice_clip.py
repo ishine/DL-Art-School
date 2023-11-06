@@ -8,6 +8,7 @@ from models.audio.tts.mini_encoder import AudioMiniEncoder
 from trainer.injectors.spec_augment import spec_augment
 from trainer.networks import register_model
 from utils.util import opt_get
+import maybe_bnb as mbnb
 
 
 def exists(val):
@@ -36,7 +37,7 @@ class VoiceCLIP(nn.Module):
         self.encoder = AudioMiniEncoder(80, encoder_output)
         if pretrained_encoder_dict_path is not None:
             self.encoder.load_state_dict(torch.load(pretrained_encoder_dict_path))
-        self.to_latent = nn.Linear(encoder_output, dim_latent, bias=False)
+        self.to_latent = mbnb.nn.Linear(encoder_output, dim_latent, bias=False)
         self.temperature = nn.Parameter(torch.tensor(1.))
         self.mel_compression_ratio = mel_compression_ratio
 

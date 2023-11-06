@@ -5,6 +5,8 @@ from functools import partial
 
 import torch
 import torch.nn as nn
+import maybe_bnb as mbnb
+
 from x_transformers.x_transformers import groupby_prefix_and_trim, FixedPositionalEmbedding, default, RotaryEmbedding, \
     DEFAULT_DIM_HEAD, RelativePositionBias, LearnedAlibiPositionalBias, AlibiPositionalBias, ScaleNorm, RMSNorm, \
     exists, Attention, FeedForward, Scale, ShiftTokens, GRUGating, Residual, cast_tuple, equals, LayerIntermediates, \
@@ -16,7 +18,7 @@ class TimeIntegrationBlock(nn.Module):
         super().__init__()
         self.emb_layers = nn.Sequential(
             nn.SiLU(),
-            nn.Linear(
+            mbnb.nn.Linear(
                 time_emb_dim,
                 2 * dim
             ),

@@ -1,0 +1,16 @@
+name: DLAS
+channels:
+  - conda-forge
+  - nvidia
+  - pytorch
+dependencies:
+  - nvidia::cudatoolkit
+  - git
+  - numpy
+  - pip
+  - python=3.10.0
+  - torchvision
+  - torchaudio
+  - pytorch::pytorch
+  - pip:
+    - -r codes/requirements.laxed.txt
